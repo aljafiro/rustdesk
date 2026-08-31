@@ -28,34 +28,32 @@ jobs:
         run: |
           choco install llvm -y
 
-      - name: Setup vcpkg and Install Dependencies
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgDirectory: 'C:/vcpkg'
-          vcpkgGitCommitId: '2023.11.20'
-          vcpkgJsonGlob: ''
-          runVcpkgInstall: false
-
-      - name: Install C++ Libraries
+      - name: Install C++ Dependencies with Native vcpkg
         run: |
-          C:\vcpkg\vcpkg.exe install opus:x64-windows-static libvpx:x64-windows-static libyuv:x64-windows-static
-          C:\vcpkg\vcpkg.exe integrate install
+          $vcpkgDir = $env:VCPKG_INSTALLATION_ROOT
+          echo "VCPKG_ROOT=$vcpkgDir" >> $env:GITHUB_ENV
+          echo "VCPKG_DEFAULT_TRIPLET=x64-windows-static" >> $env:GITHUB_ENV
           
-          # Copiar archivos de /opus/ a la raíz de include para compatibilidad con magnum-opus
-          $incPath = "C:\vcpkg\installed\x64-windows-static\include"
+          # Instalar librerías estáticas
+          & "$vcpkgDir\vcpkg.exe" install opus:x64-windows-static libvpx:x64-windows-static libyuv:x64-windows-static
+          & "$vcpkgDir\vcpkg.exe" integrate install
+
+          # Corregir rutas de cabeceras para magnum-opus y C/C++
+          $incPath = "$vcpkgDir\installed\x64-windows-static\include"
           if (Test-Path "$incPath\opus") {
             Copy-Item -Path "$incPath\opus\*" -Destination $incPath -Recurse -Force
           }
+
+          # Exportar rutas de cabeceras y librerías al entorno global de GitHub Actions
+          echo "INCLUDE=$incPath" >> $env:GITHUB_ENV
+          echo "LIB=$vcpkgDir\installed\x64-windows-static\lib" >> $env:GITHUB_ENV
+          echo "CPATH=$incPath" >> $env:GITHUB_ENV
 
       - name: Build RustDesk Client
         env:
           RENDEZVOUS_SERVER: ${{ vars.RENDEZVOUS_SERVER }}
           RS_PUB_KEY: ${{ secrets.RS_PUB_KEY }}
           LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
-          VCPKG_ROOT: 'C:\vcpkg'
-          VCPKG_DEFAULT_TRIPLET: 'x64-windows-static'
-          INCLUDE: 'C:\vcpkg\installed\x64-windows-static\include'
-          LIB: 'C:\vcpkg\installed\x64-windows-static\lib'
         run: |
           cargo build --release
 
