@@ -1,0 +1,73 @@
+name: Build Flutter Windows Client
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Fix submodules URLs (HTTPS)
+        run: |
+          if (Test-Path .gitmodules) {
+            (Get-Content .gitmodules) -replace 'git@github.com:', 'https://github.com/' | Set-Content .gitmodules
+            git submodule sync
+            git submodule update --init --recursive
+          }
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Install LLVM
+        run: |
+          choco install llvm -y
+
+      - name: Install Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Custom vcpkg
+        shell: cmd
+        run: |
+          mkdir "%TEMP%\vcpkg" 2>nul
+          cd C:\
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          git checkout 2023.04.15
+          call bootstrap-vcpkg.bat
+
+      - name: Install vcpkg Dependencies
+        shell: cmd
+        run: |
+          C:\vcpkg\vcpkg.exe install --triplet x64-windows-static
+
+      - name: Build Flutter Windows
+        env:
+          RENDEZVOUS_SERVER: ${{ vars.RENDEZVOUS_SERVER }}
+          RS_PUB_KEY: ${{ secrets.RS_PUB_KEY }}
+          LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
+          VCPKG_ROOT: 'C:\vcpkg'
+          VCPKG_DEFAULT_TRIPLET: 'x64-windows-static'
+          # Clave para evitar el error 'opus/opus_multistream.h file not found'
+          BINDGEN_EXTRA_CLANG_ARGS: '-IC:\vcpkg\installed\x64-windows-static\include'
+        run: |
+          cd flutter
+          flutter pub get
+          flutter build windows --release
+
+      - name: Upload Windows Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustdesk-flutter-windows
+          path: flutter/build/windows/runner/Release/
