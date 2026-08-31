@@ -8,8 +8,11 @@ jobs:
     runs-on: windows-2022
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository with submodules
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -18,13 +21,11 @@ jobs:
 
       - name: Install LLVM
         run: |
-          chkrootkit /v 2>$null
           choco install llvm -y
 
       - name: Set up vcpkg
         run: |
           vcpkg integrate install
-          $env:VCPKG_ROOT = "$env:VCPKG_INSTALLATION_ROOT"
           echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
 
       - name: Build RustDesk Client
