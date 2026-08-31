@@ -34,22 +34,21 @@ jobs:
       - name: Setup Custom vcpkg
         shell: cmd
         run: |
-          :: 1. Prevenir el error del directorio temporal faltante
+          :: Prevenir el error del directorio temporal faltante
           mkdir "%TEMP%\vcpkg" 2>nul
           
-          :: 2. Instalar vcpkg en C:\ (aislado del código fuente)
+          :: Instalar vcpkg en C:\ (aislado del código fuente)
           cd C:\
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           git checkout 2023.04.15
           call bootstrap-vcpkg.bat
-          call vcpkg integrate install
+          :: HEMOS ELIMINADO 'vcpkg integrate install' PORQUE RUST NO LO NECESITA
 
       - name: Install Dependencies (Manifest Mode)
         shell: cmd
         run: |
-          :: 3. Ejecutar vcpkg install SIN NOMBRES DE PAQUETES. 
-          :: Al estar en la raíz de RustDesk, leerá automáticamente vcpkg.json
+          :: Ejecutar vcpkg install para que lea automáticamente vcpkg.json
           C:\vcpkg\vcpkg.exe install --triplet x64-windows-static
 
       - name: Build RustDesk Client
