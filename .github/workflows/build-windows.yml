@@ -31,22 +31,23 @@ jobs:
         run: |
           choco install llvm -y
 
-      - name: Install C++ Dependencies
+      - name: Build Custom vcpkg and Dependencies
+        shell: cmd
         run: |
-          # VCPKG_INSTALLATION_ROOT suele ser C:\vcpkg en los runners de GitHub
-          $vcpkgDir = $env:VCPKG_INSTALLATION_ROOT
-          & "$vcpkgDir\vcpkg.exe" install opus:x64-windows-static libvpx:x64-windows-static libyuv:x64-windows-static aom:x64-windows-static
-          & "$vcpkgDir\vcpkg.exe" integrate install
+          git clone https://github.com/microsoft/vcpkg.git vcpkg
+          cd vcpkg
+          git checkout 2023.04.15
+          call bootstrap-vcpkg.bat
+          vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static
+          vcpkg integrate install
 
       - name: Build RustDesk Client
         env:
           RENDEZVOUS_SERVER: ${{ vars.RENDEZVOUS_SERVER }}
           RS_PUB_KEY: ${{ secrets.RS_PUB_KEY }}
           LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
-          VCPKG_ROOT: 'C:\vcpkg'
-          VCPKG_DEFAULT_TRIPLET: 'x64-windows-static'
-          # Esta es la variable clave que soluciona tu error
-          BINDGEN_EXTRA_CLANG_ARGS: '-IC:\vcpkg\installed\x64-windows-static\include'
+          # Apuntamos a nuestra copia local de vcpkg
+          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
         run: |
           cargo build --release
 
