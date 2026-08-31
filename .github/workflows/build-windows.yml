@@ -28,15 +28,20 @@ jobs:
         run: |
           choco install llvm -y
 
-      - name: Set up vcpkg & Install C++ Dependencies
+      - name: Install C++ Dependencies via vcpkg
         run: |
           $env:VCPKG_ROOT = "$env:VCPKG_INSTALLATION_ROOT"
+          vcpkg install opus:x64-windows-static libvpx:x64-windows-static libyuv:x64-windows-static
+          vcpkg integrate install
+          
           echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
           echo "VCPKG_DEFAULT_TRIPLET=x64-windows-static" >> $env:GITHUB_ENV
           
-          # Instalar librerías de C++ necesarias para RustDesk
-          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install opus:x64-windows-static libvpx:x64-windows-static libyuv:x64-windows-static
-          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" integrate install
+          # Copiar cabeceras para solucionar la resolución de magnum-opus (opus/opus_multistream.h vs opus_multistream.h)
+          $incPath = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\include"
+          if (Test-Path "$incPath\opus") {
+            Copy-Item -Path "$incPath\opus\*" -Destination $incPath -Recurse -Force
+          }
 
       - name: Build RustDesk Client
         env:
@@ -44,6 +49,8 @@ jobs:
           RS_PUB_KEY: ${{ secrets.RS_PUB_KEY }}
           LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
           VCPKG_ROOT: 'C:\vcpkg'
+          INCLUDE: 'C:\vcpkg\installed\x64-windows-static\include'
+          CPATH: 'C:\vcpkg\installed\x64-windows-static\include'
         run: |
           cargo build --release
 
