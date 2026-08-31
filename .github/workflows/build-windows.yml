@@ -28,18 +28,22 @@ jobs:
         run: |
           choco install llvm -y
 
-      - name: Install C++ Dependencies via vcpkg
+      - name: Set up vcpkg & Install C++ Dependencies
         run: |
           $env:VCPKG_ROOT = "$env:VCPKG_INSTALLATION_ROOT"
-          vcpkg install opus:x64-windows-static libvpx:x64-windows-static libyuv:x64-windows-static
-          vcpkg integrate install
           echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+          echo "VCPKG_DEFAULT_TRIPLET=x64-windows-static" >> $env:GITHUB_ENV
+          
+          # Instalar librerías de C++ necesarias para RustDesk
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install opus:x64-windows-static libvpx:x64-windows-static libyuv:x64-windows-static
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" integrate install
 
       - name: Build RustDesk Client
         env:
           RENDEZVOUS_SERVER: ${{ vars.RENDEZVOUS_SERVER }}
           RS_PUB_KEY: ${{ secrets.RS_PUB_KEY }}
           LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
+          VCPKG_ROOT: 'C:\vcpkg'
         run: |
           cargo build --release
 
