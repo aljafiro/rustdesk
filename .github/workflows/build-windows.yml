@@ -8,11 +8,16 @@ jobs:
     runs-on: windows-2022
 
     steps:
-      - name: Checkout repository with submodules
+      - name: Checkout main repo
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
+
+      - name: Fix and sync submodules (HTTPS)
+        run: |
+          if (Test-Path .gitmodules) {
+            (Get-Content .gitmodules) -replace 'git@github.com:', 'https://github.com/' | Set-Content .gitmodules
+            git submodule sync
+            git submodule update --init --recursive
+          }
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
