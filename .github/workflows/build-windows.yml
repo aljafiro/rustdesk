@@ -34,10 +34,17 @@ jobs:
       - name: Build Custom vcpkg and Dependencies
         shell: cmd
         run: |
-          git clone https://github.com/microsoft/vcpkg.git vcpkg
+          :: Prevenir el error del directorio temporal en Windows
+          mkdir "%TEMP%\vcpkg" 2>nul
+          
+          :: Clonar fuera del repo de RustDesk para evitar el Modo Manifiesto
+          cd C:\
+          git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           git checkout 2023.04.15
           call bootstrap-vcpkg.bat
+          
+          :: Instalar dependencias
           vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static
           vcpkg integrate install
 
@@ -46,8 +53,7 @@ jobs:
           RENDEZVOUS_SERVER: ${{ vars.RENDEZVOUS_SERVER }}
           RS_PUB_KEY: ${{ secrets.RS_PUB_KEY }}
           LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
-          # Apuntamos a nuestra copia local de vcpkg
-          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+          VCPKG_ROOT: 'C:\vcpkg'
         run: |
           cargo build --release
 
