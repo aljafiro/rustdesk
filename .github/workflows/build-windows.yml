@@ -31,22 +31,26 @@ jobs:
         run: |
           choco install llvm -y
 
-      - name: Build Custom vcpkg and Dependencies
+      - name: Setup Custom vcpkg
         shell: cmd
         run: |
-          :: Prevenir el error del directorio temporal en Windows
+          :: 1. Prevenir el error del directorio temporal faltante
           mkdir "%TEMP%\vcpkg" 2>nul
           
-          :: Clonar fuera del repo de RustDesk para evitar el Modo Manifiesto
+          :: 2. Instalar vcpkg en C:\ (aislado del código fuente)
           cd C:\
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           git checkout 2023.04.15
           call bootstrap-vcpkg.bat
-          
-          :: Instalar dependencias
-          vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static
-          vcpkg integrate install
+          call vcpkg integrate install
+
+      - name: Install Dependencies (Manifest Mode)
+        shell: cmd
+        run: |
+          :: 3. Ejecutar vcpkg install SIN NOMBRES DE PAQUETES. 
+          :: Al estar en la raíz de RustDesk, leerá automáticamente vcpkg.json
+          C:\vcpkg\vcpkg.exe install --triplet x64-windows-static
 
       - name: Build RustDesk Client
         env:
@@ -54,6 +58,7 @@ jobs:
           RS_PUB_KEY: ${{ secrets.RS_PUB_KEY }}
           LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
           VCPKG_ROOT: 'C:\vcpkg'
+          VCPKG_DEFAULT_TRIPLET: 'x64-windows-static'
         run: |
           cargo build --release
 
