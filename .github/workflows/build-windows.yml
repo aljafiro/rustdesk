@@ -28,17 +28,21 @@ jobs:
         run: |
           choco install llvm -y
 
-      - name: Install C++ Dependencies via vcpkg
+      - name: Setup vcpkg and Install Dependencies
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: 'C:/vcpkg'
+          vcpkgGitCommitId: '2023.11.20'
+          vcpkgJsonGlob: ''
+          runVcpkgInstall: false
+
+      - name: Install C++ Libraries
         run: |
-          $env:VCPKG_ROOT = "$env:VCPKG_INSTALLATION_ROOT"
-          vcpkg install opus:x64-windows-static libvpx:x64-windows-static libyuv:x64-windows-static
-          vcpkg integrate install
+          C:\vcpkg\vcpkg.exe install opus:x64-windows-static libvpx:x64-windows-static libyuv:x64-windows-static
+          C:\vcpkg\vcpkg.exe integrate install
           
-          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
-          echo "VCPKG_DEFAULT_TRIPLET=x64-windows-static" >> $env:GITHUB_ENV
-          
-          # Copiar cabeceras para solucionar la resolución de magnum-opus (opus/opus_multistream.h vs opus_multistream.h)
-          $incPath = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\include"
+          # Copiar archivos de /opus/ a la raíz de include para compatibilidad con magnum-opus
+          $incPath = "C:\vcpkg\installed\x64-windows-static\include"
           if (Test-Path "$incPath\opus") {
             Copy-Item -Path "$incPath\opus\*" -Destination $incPath -Recurse -Force
           }
@@ -49,8 +53,9 @@ jobs:
           RS_PUB_KEY: ${{ secrets.RS_PUB_KEY }}
           LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
           VCPKG_ROOT: 'C:\vcpkg'
+          VCPKG_DEFAULT_TRIPLET: 'x64-windows-static'
           INCLUDE: 'C:\vcpkg\installed\x64-windows-static\include'
-          CPATH: 'C:\vcpkg\installed\x64-windows-static\include'
+          LIB: 'C:\vcpkg\installed\x64-windows-static\lib'
         run: |
           cargo build --release
 
