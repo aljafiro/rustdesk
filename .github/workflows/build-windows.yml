@@ -10,6 +10,9 @@ jobs:
     steps:
       - name: Checkout main repo
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
       - name: Fix and sync submodules (HTTPS)
         run: |
@@ -28,32 +31,22 @@ jobs:
         run: |
           choco install llvm -y
 
-      - name: Install C++ Dependencies with Native vcpkg
+      - name: Install C++ Dependencies
         run: |
+          # VCPKG_INSTALLATION_ROOT suele ser C:\vcpkg en los runners de GitHub
           $vcpkgDir = $env:VCPKG_INSTALLATION_ROOT
-          echo "VCPKG_ROOT=$vcpkgDir" >> $env:GITHUB_ENV
-          echo "VCPKG_DEFAULT_TRIPLET=x64-windows-static" >> $env:GITHUB_ENV
-          
-          # Instalar librerías estáticas
-          & "$vcpkgDir\vcpkg.exe" install opus:x64-windows-static libvpx:x64-windows-static libyuv:x64-windows-static
+          & "$vcpkgDir\vcpkg.exe" install opus:x64-windows-static libvpx:x64-windows-static libyuv:x64-windows-static aom:x64-windows-static
           & "$vcpkgDir\vcpkg.exe" integrate install
-
-          # Corregir rutas de cabeceras para magnum-opus y C/C++
-          $incPath = "$vcpkgDir\installed\x64-windows-static\include"
-          if (Test-Path "$incPath\opus") {
-            Copy-Item -Path "$incPath\opus\*" -Destination $incPath -Recurse -Force
-          }
-
-          # Exportar rutas de cabeceras y librerías al entorno global de GitHub Actions
-          echo "INCLUDE=$incPath" >> $env:GITHUB_ENV
-          echo "LIB=$vcpkgDir\installed\x64-windows-static\lib" >> $env:GITHUB_ENV
-          echo "CPATH=$incPath" >> $env:GITHUB_ENV
 
       - name: Build RustDesk Client
         env:
           RENDEZVOUS_SERVER: ${{ vars.RENDEZVOUS_SERVER }}
           RS_PUB_KEY: ${{ secrets.RS_PUB_KEY }}
           LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
+          VCPKG_ROOT: 'C:\vcpkg'
+          VCPKG_DEFAULT_TRIPLET: 'x64-windows-static'
+          # Esta es la variable clave que soluciona tu error
+          BINDGEN_EXTRA_CLANG_ARGS: '-IC:\vcpkg\installed\x64-windows-static\include'
         run: |
           cargo build --release
 
