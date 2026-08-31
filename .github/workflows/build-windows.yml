@@ -34,21 +34,16 @@ jobs:
       - name: Setup Custom vcpkg
         shell: cmd
         run: |
-          :: Prevenir el error del directorio temporal faltante
           mkdir "%TEMP%\vcpkg" 2>nul
-          
-          :: Instalar vcpkg en C:\ (aislado del código fuente)
           cd C:\
           git clone https://github.com/microsoft/vcpkg.git
           cd vcpkg
           git checkout 2023.04.15
           call bootstrap-vcpkg.bat
-          :: HEMOS ELIMINADO 'vcpkg integrate install' PORQUE RUST NO LO NECESITA
 
       - name: Install Dependencies (Manifest Mode)
         shell: cmd
         run: |
-          :: Ejecutar vcpkg install para que lea automáticamente vcpkg.json
           C:\vcpkg\vcpkg.exe install --triplet x64-windows-static
 
       - name: Build RustDesk Client
@@ -58,6 +53,8 @@ jobs:
           LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
           VCPKG_ROOT: 'C:\vcpkg'
           VCPKG_DEFAULT_TRIPLET: 'x64-windows-static'
+          # Variable clave para forzar a Clang a encontrar opus/opus_multistream.h
+          BINDGEN_EXTRA_CLANG_ARGS: '-IC:\vcpkg\installed\x64-windows-static\include'
         run: |
           cargo build --release
 
