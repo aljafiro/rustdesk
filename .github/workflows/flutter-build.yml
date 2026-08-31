@@ -31,7 +31,6 @@ jobs:
         run: |
           choco install llvm -y
 
-      # Fijamos la versión 3.10.6 de Flutter para evitar los errores de DialogTheme / google_fonts
       - name: Install Flutter SDK
         uses: subosito/flutter-action@v2
         with:
@@ -57,6 +56,12 @@ jobs:
         run: |
           C:\vcpkg\vcpkg.exe install --triplet x64-windows-static
 
+      # CORRECCIÓN: Ejecutar flutter pub get ANTES de generar los bindings de Rust/ffigen
+      - name: Get Flutter Packages
+        run: |
+          cd flutter
+          flutter pub get
+
       - name: Generate Flutter-Rust Bindings
         run: |
           flutter_rust_bridge_codegen --rust-input src/flutter_ffi.rs --dart-output flutter/lib/generated_bridge.dart
@@ -71,7 +76,6 @@ jobs:
           BINDGEN_EXTRA_CLANG_ARGS: '-IC:\vcpkg\installed\x64-windows-static\include'
         run: |
           cd flutter
-          flutter pub get
           flutter build windows --release
 
       - name: Upload Windows Build Artifact
