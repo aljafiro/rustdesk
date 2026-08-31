@@ -1,7 +1,7 @@
 name: Build Windows Client
 
 on:
-  workflow_dispatch: # Permite ejecutar la compilación manualmente desde GitHub
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,14 +16,22 @@ jobs:
         with:
           targets: x86_64-pc-windows-msvc
 
-      - name: Install Dependencies & vcpkg
+      - name: Install LLVM
+        run: |
+          chkrootkit /v 2>$null
+          choco install llvm -y
+
+      - name: Set up vcpkg
         run: |
           vcpkg integrate install
+          $env:VCPKG_ROOT = "$env:VCPKG_INSTALLATION_ROOT"
+          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
 
       - name: Build RustDesk Client
         env:
           RENDEZVOUS_SERVER: ${{ vars.RENDEZVOUS_SERVER }}
           RS_PUB_KEY: ${{ secrets.RS_PUB_KEY }}
+          LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
         run: |
           cargo build --release
 
