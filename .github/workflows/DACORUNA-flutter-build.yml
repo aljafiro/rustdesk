@@ -49,9 +49,13 @@ jobs:
           flutter --version
           flutter doctor -v
 
-      - name: Install LLVM/Clang (for bindgen)
+      - name: Configure LLVM/Clang (for bindgen)
         run: |
-          choco install -y llvm --version=15.0.2
+          # windows-latest ya trae LLVM preinstalado; solo apuntamos LIBCLANG_PATH a él.
+          # Si por lo que sea faltara, se instala sin fijar versión (evita el conflicto de downgrade).
+          if (-not (Test-Path "C:\Program Files\LLVM\bin\libclang.dll")) {
+            choco install -y llvm
+          }
           echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Install Git & vcpkg dependencies
