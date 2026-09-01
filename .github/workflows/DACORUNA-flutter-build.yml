@@ -66,10 +66,11 @@ jobs:
           echo "VCPKG_ROOT=$env:USERPROFILE\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "VCPKG_DEFAULT_TRIPLET=x64-windows-static" | Out-File -FilePath $env:GITHUB_ENV -Append
           # El repo de RustDesk trae su propio vcpkg.json (modo manifest) en la raíz.
-          # En este modo NO se pasan paquetes sueltos: al ejecutar "vcpkg install"
-          # (sin argumentos) desde la carpeta del repo, instala automáticamente
-          # todo lo declarado en ese vcpkg.json.
-          & $env:USERPROFILE\vcpkg\vcpkg.exe install --triplet x64-windows-static
+          # IMPORTANTE: en modo manifest, "vcpkg install" instala por defecto en
+          # <repo>\vcpkg_installed\<triplet>, pero el build.rs de magnum-opus (y otros
+          # crates de Rust) buscan en $VCPKG_ROOT\installed\<triplet> (modo clásico).
+          # Forzamos ese destino con --x-install-root para que coincidan.
+          & $env:USERPROFILE\vcpkg\vcpkg.exe install --triplet x64-windows-static --x-install-root="$env:USERPROFILE\vcpkg\installed"
 
       - name: Cache cargo registry + git
         uses: actions/cache@v4
