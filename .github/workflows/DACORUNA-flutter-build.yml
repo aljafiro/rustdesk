@@ -64,8 +64,12 @@ jobs:
           git clone https://github.com/microsoft/vcpkg $env:USERPROFILE\vcpkg
           & $env:USERPROFILE\vcpkg\bootstrap-vcpkg.bat
           echo "VCPKG_ROOT=$env:USERPROFILE\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
-          $pkgs = @('libvpx:x64-windows-static','libyuv:x64-windows-static','opus:x64-windows-static','aom:x64-windows-static')
-          & $env:USERPROFILE\vcpkg\vcpkg.exe install $pkgs
+          echo "VCPKG_DEFAULT_TRIPLET=x64-windows-static" | Out-File -FilePath $env:GITHUB_ENV -Append
+          # El repo de RustDesk trae su propio vcpkg.json (modo manifest) en la raíz.
+          # En este modo NO se pasan paquetes sueltos: al ejecutar "vcpkg install"
+          # (sin argumentos) desde la carpeta del repo, instala automáticamente
+          # todo lo declarado en ese vcpkg.json.
+          & $env:USERPROFILE\vcpkg\vcpkg.exe install --triplet x64-windows-static
 
       - name: Cache cargo registry + git
         uses: actions/cache@v4
