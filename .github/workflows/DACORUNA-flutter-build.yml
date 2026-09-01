@@ -1,73 +1,130 @@
-name: Build Flutter Windows Client
+name: Build RustDesk Windows x64 (Sciter) - Diputación da Coruña
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
+  push:
+    branches: [ main, master ]
+    paths:
+      - '.github/workflows/build-windows-diputacion.yml'
+      - '**/*.rs'
+      - 'Cargo.*'
+      - 'libs/**'
+      - 'src/**'
+
+permissions:
+  contents: read
+
+env:
+  # Valores por defecto (mejor usar GitHub Secrets para producción, ver abajo).
+  DEFAULT_RENDEZVOUS_SERVER: soporteremoto-diputacion-pre.dacoruna.gal
+  DEFAULT_RS_PUB_KEY: "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
+  DEFAULT_RELAY_SERVER: "soporteremoto-diputacion-pre.dacoruna.gal:21117"
 
 jobs:
-  build-windows:
-    runs-on: windows-2022
+  build-windows-x64:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
 
     steps:
-      - name: Checkout repository
+      - name: Checkout (submodules)
         uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 0
 
-      - name: Fix submodules URLs (HTTPS)
-        run: |
-          if (Test-Path .gitmodules) {
-            (Get-Content .gitmodules) -replace 'git@github.com:', 'https://github.com/' | Set-Content .gitmodules
-            git submodule sync
-            git submodule update --init --recursive
-          }
-
-      - name: Install Rust Toolchain
+      - name: Setup Rust (stable)
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
 
-      - name: Install LLVM
-        run: |
-          choco install llvm -y
-
-      - name: Install Flutter SDK
+      - name: Setup Flutter (stable)
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-          cache: true
+          channel: stable
 
-      - name: Setup Custom vcpkg
-        shell: cmd
+      - name: Enable Flutter Windows desktop
         run: |
-          mkdir "%TEMP%\vcpkg" 2>nul
-          cd C:\
-          git clone https://github.com/microsoft/vcpkg.git
-          cd vcpkg
-          git checkout 2023.04.15
-          call bootstrap-vcpkg.bat
+          flutter config --enable-windows-desktop
+          flutter --version
+          flutter doctor -v
 
-      - name: Install vcpkg Dependencies
-        shell: cmd
+      - name: Install LLVM/Clang (for bindgen)
         run: |
-          C:\vcpkg\vcpkg.exe install --triplet x64-windows-static
+          choco install -y llvm --version=15.0.2
+          echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Build Flutter Windows
+      - name: Install Git & vcpkg dependencies
+        run: |
+          git --version
+          git clone https://github.com/microsoft/vcpkg $env:USERPROFILE\vcpkg
+          & $env:USERPROFILE\vcpkg\bootstrap-vcpkg.bat
+          echo "VCPKG_ROOT=$env:USERPROFILE\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $pkgs = @('libvpx:x64-windows-static','libyuv:x64-windows-static','opus:x64-windows-static','aom:x64-windows-static')
+          & $env:USERPROFILE\vcpkg\vcpkg.exe install $pkgs
+
+      - name: Cache cargo registry + git
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache vcpkg installed
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.USERPROFILE }}\vcpkg\installed
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('.github/workflows/**','vcpkg.json') }}
+
+      - name: Download Sciter DLL (RustDesk Windows desktop)
+        run: |
+          New-Item -ItemType Directory -Force -Path target\release | Out-Null
+          Invoke-WebRequest -UseBasicParsing -Uri https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.win/x64/sciter.dll -OutFile target\release\sciter.dll
+
+      - name: Set ID/Key/Relay (from Secrets, con fallback a los valores por defecto)
         env:
-          RENDEZVOUS_SERVER: ${{ vars.RENDEZVOUS_SERVER }}
+          RENDEZVOUS_SERVER: ${{ secrets.RENDEZVOUS_SERVER }}
           RS_PUB_KEY: ${{ secrets.RS_PUB_KEY }}
-          LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
-          VCPKG_ROOT: 'C:\vcpkg'
-          VCPKG_DEFAULT_TRIPLET: 'x64-windows-static'
-          # Clave para evitar el error 'opus/opus_multistream.h file not found'
-          BINDGEN_EXTRA_CLANG_ARGS: '-IC:\vcpkg\installed\x64-windows-static\include'
+          RELAY_SERVER: ${{ secrets.RELAY_SERVER }}
         run: |
-          cd flutter
-          flutter pub get
-          flutter build windows --release
+          if (-not $env:RENDEZVOUS_SERVER) { $env:RENDEZVOUS_SERVER = "$env:DEFAULT_RENDEZVOUS_SERVER" }
+          if (-not $env:RS_PUB_KEY) { $env:RS_PUB_KEY = "$env:DEFAULT_RS_PUB_KEY" }
+          if (-not $env:RELAY_SERVER) { $env:RELAY_SERVER = "$env:DEFAULT_RELAY_SERVER" }
+          echo "Using RENDEZVOUS_SERVER=$env:RENDEZVOUS_SERVER"
+          echo "Using RS_PUB_KEY=(hidden)"
+          echo "Using RELAY_SERVER=$env:RELAY_SERVER"
+          $candidateFiles = Get-ChildItem -Recurse -File -Path libs -Filter config.rs
+          if ($candidateFiles.Count -eq 0) {
+            Write-Error "config.rs not found: ¿cambió la estructura del repo?"; exit 1
+          }
+          foreach ($f in $candidateFiles) {
+            (Get-Content $f.FullName) |
+              ForEach-Object {
+                $_ -replace '(?m)^(\s*pub\s+const\s+DEFAULT_RENDEZVOUS_SERVER\s*:\s*&str\s*=\s*)"[^"]*"', "`$1`"$env:RENDEZVOUS_SERVER`""
+              } |
+              ForEach-Object {
+                $_ -replace '(?m)^(\s*pub\s+const\s+DEFAULT_RS_PUB_KEY\s*:\s*&str\s*=\s*)"[^"]*"', "`$1`"$env:RS_PUB_KEY`""
+              } |
+              ForEach-Object {
+                $_ -replace '(?m)^(\s*pub\s+const\s+DEFAULT_RELAY_SERVER\s*:\s*&str\s*=\s*)"[^"]*"', "`$1`"$env:RELAY_SERVER`""
+              } | Set-Content $f.FullName -Encoding UTF8
+          }
 
-      - name: Upload Windows Build Artifact
+      - name: Build (release, x64)
+        env:
+          VCPKG_ROOT: ${{ env.VCPKG_ROOT }}
+        run: |
+          cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rustdesk-flutter-windows
-          path: flutter/build/windows/runner/Release/
+          name: rustdesk-diputacion-windows-x64
+          path: |
+            target\x86_64-pc-windows-msvc\release\rustdesk.exe
+            target\release\sciter.dll
+
+      - name: Show binary size
+        run: |
+          Get-ChildItem target\x86_64-pc-windows-msvc\release\rustdesk.exe | Select-Object Name,Length
