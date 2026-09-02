@@ -33,9 +33,14 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Setup Rust (stable)
-        uses: dtolnay/rust-toolchain@stable
+      # Sciter EXIGE Rust 1.75 exacto. Versiones más nuevas (1.78+) cambiaron el
+      # layout binario de i128 y rompen el "puente" Rust<->sciter.dll: compila
+      # sin error, pero la ventana sale en blanco al arrancar.
+      # https://github.com/rustdesk/rustdesk/discussions/7503
+      - name: Setup Rust (1.75, requerido por Sciter)
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
         with:
+          toolchain: "1.75"
           targets: x86_64-pc-windows-msvc
 
       - name: Setup Flutter (stable)
