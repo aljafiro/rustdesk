@@ -1,4 +1,4 @@
-name: DACORUNA - PORT- Build RustDesk Windows x64 (Sciter)
+name: DACORUNA - Build RustDesk Windows x64 (Sciter)
 
 on:
   workflow_dispatch: {}
@@ -95,36 +95,6 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path target\release | Out-Null
           Invoke-WebRequest -UseBasicParsing -Uri https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.win/x64/sciter.dll -OutFile target\release\sciter.dll
-          # Copia también junto a Cargo.toml, la necesitamos ahí para incrustarla con include_bytes!
-          Copy-Item target\release\sciter.dll .\sciter.dll -Force
-
-      # Incrusta sciter.dll DENTRO del .exe (como bytes) y hace que se autoextraiga
-      # junto a sí mismo la primera vez que arranca -> un único archivo portable,
-      # sin tener que repartir el .dll por separado.
-      - name: Embed sciter.dll into the binary (single-file portable)
-        run: |
-          $mainRs = "src\main.rs"
-          $content = Get-Content $mainRs -Raw
-          if ($content -notmatch 'RUSTDESK_EMBEDDED_SCITER_DLL') {
-            $patch = @'
-          // --- RUSTDESK_EMBEDDED_SCITER_DLL: autoextrae sciter.dll junto al .exe ---
-          {
-              let exe_dir = std::env::current_exe().unwrap().parent().unwrap().to_path_buf();
-              let dll_path = exe_dir.join("sciter.dll");
-              if !dll_path.exists() {
-                  let bytes = std::include_bytes!("..\\sciter.dll");
-                  let _ = std::fs::write(&dll_path, bytes.as_slice());
-              }
-          }
-          // --- fin RUSTDESK_EMBEDDED_SCITER_DLL ---
-
-'@
-            $content = $content -replace '(fn\s+main\s*\([^)]*\)\s*(->\s*[^\{]+)?\{\s*)', "`$1`n$patch"
-            Set-Content -Path $mainRs -Value $content -Encoding UTF8 -NoNewline
-            Write-Host "Patch aplicado en $mainRs"
-          } else {
-            Write-Host "Patch ya presente, se omite"
-          }
 
       - name: Set ID/Key/Relay (from Secrets, con fallback a los valores por defecto)
         env:
