@@ -106,20 +106,21 @@ jobs:
           $mainRs = "src\main.rs"
           $content = Get-Content $mainRs -Raw
           if ($content -notmatch 'RUSTDESK_EMBEDDED_SCITER_DLL') {
-            $patch = @'
-          // --- RUSTDESK_EMBEDDED_SCITER_DLL: autoextrae sciter.dll junto al .exe ---
-          {
-              let exe_dir = std::env::current_exe().unwrap().parent().unwrap().to_path_buf();
-              let dll_path = exe_dir.join("sciter.dll");
-              if !dll_path.exists() {
-                  let bytes = std::include_bytes!("..\\sciter.dll");
-                  let _ = std::fs::write(&dll_path, bytes.as_slice());
-              }
-          }
-          // --- fin RUSTDESK_EMBEDDED_SCITER_DLL ---
-
-'@
-            $content = $content -replace '(fn\s+main\s*\([^)]*\)\s*(->\s*[^\{]+)?\{\s*)', "`$1`n$patch"
+            $patchLines = @(
+              '// --- RUSTDESK_EMBEDDED_SCITER_DLL: autoextrae sciter.dll junto al .exe ---',
+              '{',
+              '    let exe_dir = std::env::current_exe().unwrap().parent().unwrap().to_path_buf();',
+              '    let dll_path = exe_dir.join("sciter.dll");',
+              '    if !dll_path.exists() {',
+              '        let bytes = std::include_bytes!("..\\sciter.dll");',
+              '        let _ = std::fs::write(&dll_path, bytes.as_slice());',
+              '    }',
+              '}',
+              '// --- fin RUSTDESK_EMBEDDED_SCITER_DLL ---',
+              ''
+            )
+            $patch = [string]::Join([Environment]::NewLine, $patchLines)
+            $content = $content -replace '(fn\s+main\s*\([^)]*\)\s*(->\s*[^\{]+)?\{\s*)', "`$1`n$patch`n"
             Set-Content -Path $mainRs -Value $content -Encoding UTF8 -NoNewline
             Write-Host "Patch aplicado en $mainRs"
           } else {
