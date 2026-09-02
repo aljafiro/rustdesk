@@ -125,19 +125,47 @@ jobs:
               } | Set-Content $f.FullName -Encoding UTF8
           }
 
+      - name: Set up Python (para inline-sciter.py)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      # CRÍTICO: sin este paso + el feature "inline", el binario no lleva
+      # incrustados los recursos HTML/CSS de la interfaz de Sciter -> ventana
+      # en blanco al arrancar, aunque compile perfectamente.
+      - name: Inline Sciter UI resources
+        run: |
+          python res\inline-sciter.py
+
       - name: Build (release, x64)
         env:
           VCPKG_ROOT: ${{ env.VCPKG_ROOT }}
         run: |
-          cargo build --release --target x86_64-pc-windows-msvc
+          cargo build --locked --features inline --release --target x86_64-pc-windows-msvc --bins
+
+      - name: Recopilar todas las DLLs necesarias
+        run: |
+          New-Item -ItemType Directory -Force -Path SignOutput | Out-Null
+          Copy-Item target\x86_64-pc-windows-msvc\release\rustdesk.exe SignOutput\
+          Copy-Item target\release\sciter.dll SignOutput\
+          # Copia cualquier .dll que el propio cargo/vcpkg haya dejado junto al binario
+          # (OpenSSL, etc.) — evita tener que copiarlas a mano después.
+          Get-ChildItem target\x86_64-pc-windows-msvc\release\*.dll -ErrorAction SilentlyContinue |
+            Copy-Item -Destination SignOutput\ -Force
+          # Como refuerzo, copia también cualquier DLL runtime que vcpkg haya generado
+          # (por si el triplet no dejó todo enlazado 100% estático).
+          if (Test-Path "$env:USERPROFILE\vcpkg\installed\x64-windows-static\bin") {
+            Get-ChildItem "$env:USERPROFILE\vcpkg\installed\x64-windows-static\bin\*.dll" -ErrorAction SilentlyContinue |
+              Copy-Item -Destination SignOutput\ -Force
+          }
+          Write-Host "Contenido final del paquete:"
+          Get-ChildItem SignOutput\
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: rustdesk-diputacion-windows-x64
-          path: |
-            target\x86_64-pc-windows-msvc\release\rustdesk.exe
-            target\release\sciter.dll
+          path: SignOutput\
 
       - name: Show binary size
         run: |
