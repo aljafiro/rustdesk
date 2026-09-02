@@ -1,4 +1,4 @@
-name: Build RustDesk Windows x64 (Sciter) - Diputación da Coruña - PORTABLE
+name: DACORUNA - PORT- Build RustDesk Windows x64 (Sciter)
 
 on:
   workflow_dispatch: {}
