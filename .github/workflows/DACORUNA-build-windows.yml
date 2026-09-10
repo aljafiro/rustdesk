@@ -38,9 +38,9 @@ jobs:
         shell: pwsh
         run: |
           vcpkg integrate install
-          vcpkg install --triplet x64-windows-static
-          $vcpkgDir = $env:VCPKGROOT
-          if (-not $vcpkgDir) { $vcpkgDir = "C:/vcpkg" }
+          vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static --classic
+    
+          $vcpkgDir = "C:/vcpkg"
           echo "VCPKG_ROOT=$vcpkgDir" >> $env:GITHUB_ENV
           echo "INCLUDE=$vcpkgDir\installed\x64-windows-static\include" >> $env:GITHUB_ENV
           echo "LIB=$vcpkgDir\installed\x64-windows-static\lib" >> $env:GITHUB_ENV
