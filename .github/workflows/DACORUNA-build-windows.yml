@@ -51,6 +51,11 @@ jobs:
           echo "RS_PUB_KEY=mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk=" >> $env:GITHUB_ENV
           echo "FORCE_RELAY=Y" >> $env:GITHUB_ENV
 
+      - name: Instalar dependencias de Flutter
+        shell: pwsh
+        run: |
+          flutter pub get
+
       - name: Compilar versión Portable para Windows
         shell: pwsh
         run: |
