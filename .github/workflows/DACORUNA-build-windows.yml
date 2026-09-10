@@ -52,6 +52,7 @@ jobs:
           echo "FORCE_RELAY=Y" >> $env:GITHUB_ENV
 
       - name: Instalar dependencias de Flutter
+        working-directory: flutter
         shell: pwsh
         run: |
           flutter pub get
