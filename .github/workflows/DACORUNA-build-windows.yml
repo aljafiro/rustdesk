@@ -44,7 +44,7 @@ jobs:
         shell: pwsh
         run: |
           vcpkg integrate install
-          vcpkg install opus:x64-windows-static
+          vcpkg install --triplet x64-windows-static
           echo "VCPKG_ROOT=$env:VCPKGROOT" >> $env:GITHUB_ENV
 
       - name: Compilar versión Portable para Windows
