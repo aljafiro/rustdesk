@@ -27,7 +27,7 @@ jobs:
           python-version: '3.11'
 
       - name: Configurar Flutter
-        uses: subosito/flutter-action@v3
+        uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.6' # Ajusta según la versión de tu fork
           cache: true
