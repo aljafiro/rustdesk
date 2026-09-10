@@ -1,0 +1,52 @@
+name: Build RustDesk Portable Windows
+
+on:
+  workflow_dispatch: # Permite lanzarlo manualmente desde la pestaña Actions
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout al repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar entorno de Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Configurar Node.js (necesario para la interfaz)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configurar Python (necesario para scripts de compilación)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v3
+        with:
+          flutter-version: '3.19.6' # Ajusta según la versión de tu fork
+          cache: true
+
+      - name: Configurar variables de entorno del Servidor y Clave
+        shell: pwsh
+        run: |
+          echo "RENDEZVOUS_SERVER=servidor-diputacion-pre.dacoruna.gal" >> $env:GITHUB_ENV
+          echo "RS_PUB_KEY=mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk=" >> $env:GITHUB_ENV
+
+      - name: Compilar versión Portable para Windows
+        shell: pwsh
+        run: |
+          # Dependiendo de la versión de tu fork (1.1.x/1.2.x o 1.3.x), el comando puede variar ligeramente.
+          # Este comando ejecuta el empaquetado portable nativo de RustDesk:
+          python build.py --portable --flutter
+
+      - name: Subir artefacto compilado
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustdesk-portable-windows
+          path: target/release/*.exe # Ajusta la ruta si tu build portable genera el .exe en otra carpeta de salida
