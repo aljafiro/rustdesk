@@ -63,8 +63,11 @@ jobs:
 
       - name: Compilar versión Portable con el servidor de la Diputación
         shell: pwsh
+        env:
+          RENDEZVOUS_SERVER: "soporteremoto-diputacion-pre.dacoruna.gal"
+          RS_PUB_KEY: "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
         run: |
-          python build.py --portable --flutter --server "soporteremoto-diputacion-pre.dacoruna.gal" --key "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
+          python build.py --portable --flutter
 
       - name: Subir artefacto compilado
         uses: actions/upload-artifact@v4
