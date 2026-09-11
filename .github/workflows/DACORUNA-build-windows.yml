@@ -61,6 +61,16 @@ jobs:
           cargo install flutter_rust_bridge_codegen --version 1.80.1 --features "uuid" --locked
           flutter_rust_bridge_codegen --rust-input .\src\flutter_ffi.rs --dart-output .\flutter\lib\generated_bridge.dart --c-output .\src\bridge_generated.h
 
+      - name: Inyectar servidor y clave en el código fuente de Rust
+        shell: pwsh
+        run: |
+          $configFile = "libs/hbb_common/src/config.rs"
+          if (!(Test-Path $configFile)) {
+            $configFile = "src/common.rs"
+          }
+          # Reemplaza el servidor por defecto en el código de Rust
+          (Get-Content $configFile -Raw) -replace 'rs-ny.rustdesk.com', 'soporteremoto-diputacion-pre.dacoruna.gal' | Set-Content $configFile
+
       - name: Compilar versión Portable con el servidor de la Diputación
         shell: pwsh
         env:
