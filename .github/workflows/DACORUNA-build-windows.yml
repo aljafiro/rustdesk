@@ -69,6 +69,7 @@ jobs:
       - name: Compilar versión Portable para Windows
         shell: pwsh
         run: |
+          $env:CMAKE_GENERATOR = "Visual Studio 17 2022"
           python build.py --portable --flutter
 
       - name: Subir artefacto compilado
