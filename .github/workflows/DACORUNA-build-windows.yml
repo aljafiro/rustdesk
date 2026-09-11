@@ -78,6 +78,11 @@ jobs:
             flutter/build/windows/runner/Release/*.exe
             *.exe
 
+      - name: Inyectar config.json en la carpeta portable
+        shell: pwsh
+        run: |
+          Copy-Item "config.json" -Destination "flutter/build/windows/x64/runner/Release/" -Force
+
       - name: Subir carpeta portable limpia como artefacto
         uses: actions/upload-artifact@v4
         with:
