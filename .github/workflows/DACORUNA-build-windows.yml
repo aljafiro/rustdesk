@@ -52,7 +52,7 @@ jobs:
       - name: Configurar variables de entorno del Servidor, Clave y Relay
         shell: pwsh
         run: |
-          echo "RENDEZVOUS_SERVER=servidor-diputacion-pre.dacoruna.gal" >> $env:GITHUB_ENV
+          echo "RENDEZVOUS_SERVER=soporteremoto-diputacion-pre.dacoruna.gal" >> $env:GITHUB_ENV
           echo "RS_PUB_KEY=mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk=" >> $env:GITHUB_ENV
           echo "FORCE_RELAY=Y" >> $env:GITHUB_ENV
 
