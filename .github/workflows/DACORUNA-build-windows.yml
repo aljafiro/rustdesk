@@ -57,6 +57,19 @@ jobs:
         run: |
           flutter pub get
 
+      - name: Instalar dependencias de Flutter
+        working-directory: flutter
+        shell: pwsh
+        run: |
+          flutter pub get
+
+      - name: Instalar generador de puentes y generar codigo FFI
+        shell: pwsh
+        run: |
+          cargo install flutter_rust_bridge_codegen --version 1.80.1 --locked
+          # O alternativamente, ejecutar el script interno que trae RustDesk para generarlo:
+          python build.py --flutter_gen
+
       - name: Compilar versión Portable para Windows
         shell: pwsh
         run: |
