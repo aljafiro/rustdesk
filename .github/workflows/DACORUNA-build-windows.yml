@@ -34,8 +34,10 @@ jobs:
           flutter-version: '3.24.4'
           cache: true
 
-      - name: Configurar Visual Studio y MSBuild
-        uses: microsoft/setup-msbuild@v2
+      - name: Instalar Visual Studio 2019 Build Tools para compatibilidad con Flutter
+        shell: pwsh
+        run: |
+          choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet" --no-progress
 
       - name: Configurar Vcpkg e instalar dependencias
         shell: pwsh
@@ -66,22 +68,9 @@ jobs:
           cargo install flutter_rust_bridge_codegen --version 1.80.1 --features "uuid" --locked
           flutter_rust_bridge_codegen --rust-input .\src\flutter_ffi.rs --dart-output .\flutter\lib\generated_bridge.dart --c-output .\src\bridge_generated.h
 
-      - name: Parchear versión de Visual Studio en scripts y proyectos
-        shell: pwsh
-        run: |
-          Get-ChildItem -Recurse -Include *.py, *.txt, *.cmake, *.json | ForEach-Object {
-              $content = Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue
-              if ($content -match "Visual Studio 16 2019") {
-                  $newContent = $content -replace "Visual Studio 16 2019", "Visual Studio 17 2022"
-                  Set-Content $_.FullName -Value $newContent
-                  Write-Host "Actualizado a VS 2022 en: $($_.Name)"
-              }
-          }
-
       - name: Compilar versión Portable para Windows
         shell: pwsh
         run: |
-          $env:CMAKE_GENERATOR = "Visual Studio 17 2022"
           python build.py --portable --flutter
 
       - name: Subir artefacto compilado
