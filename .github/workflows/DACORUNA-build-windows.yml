@@ -49,10 +49,9 @@ jobs:
           if ($env:VCPKGROOT) { $vcpkgDir = $env:VCPKGROOT }
           echo "VCPKG_ROOT=$vcpkgDir" >> $env:GITHUB_ENV
 
-      - name: Configurar variables de entorno del Servidor, Clave y Relay
-        shell: pwsh
+      - name: Compilar con el servidor de la Diputación        shell: pwsh
         run: |
-          python flutter/build.py --server "soporteremoto-diputacion-pre.dacoruna.gal" --key "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
+          python build.py --server "soporteremoto-diputacion-pre.dacoruna.gal" --key "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
 
       - name: Instalar dependencias de Flutter
         working-directory: flutter
