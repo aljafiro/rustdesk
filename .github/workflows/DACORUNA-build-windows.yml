@@ -53,7 +53,7 @@ jobs:
       - name: Compilar con el servidor de la Diputación
         shell: pwsh
         run: |
-          python build.py --server "soporteremoto-diputacion-pre.dacoruna.gal" --key "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
+          python build.py --portable --flutter --server "soporteremoto-diputacion-pre.dacoruna.gal" --key "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
 
       - name: Instalar dependencias de Flutter
         working-directory: flutter
