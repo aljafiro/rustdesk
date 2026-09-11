@@ -66,6 +66,18 @@ jobs:
           cargo install flutter_rust_bridge_codegen --version 1.80.1 --features "uuid" --locked
           flutter_rust_bridge_codegen --rust-input .\src\flutter_ffi.rs --dart-output .\flutter\lib\generated_bridge.dart --c-output .\src\bridge_generated.h
 
+      - name: Parchear versión de Visual Studio en scripts y proyectos
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse -Include *.py, *.txt, *.cmake, *.json | ForEach-Object {
+              $content = Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue
+              if ($content -match "Visual Studio 16 2019") {
+                  $newContent = $content -replace "Visual Studio 16 2019", "Visual Studio 17 2022"
+                  Set-Content $_.FullName -Value $newContent
+                  Write-Host "Actualizado a VS 2022 en: $($_.Name)"
+              }
+          }
+
       - name: Compilar versión Portable para Windows
         shell: pwsh
         run: |
