@@ -34,6 +34,9 @@ jobs:
           flutter-version: '3.24.4'
           cache: true
 
+      - name: Configurar Visual Studio y MSBuild
+        uses: microsoft/setup-msbuild@v2
+
       - name: Configurar Vcpkg e instalar dependencias
         shell: pwsh
         run: |
