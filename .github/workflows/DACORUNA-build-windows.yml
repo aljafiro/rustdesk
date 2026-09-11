@@ -1,6 +1,5 @@
 name: Build RustDesk Portable Windows
 
-
 on:
   workflow_dispatch:
 
@@ -50,11 +49,6 @@ jobs:
           if ($env:VCPKGROOT) { $vcpkgDir = $env:VCPKGROOT }
           echo "VCPKG_ROOT=$vcpkgDir" >> $env:GITHUB_ENV
 
-      - name: Compilar con el servidor de la Diputación
-        shell: pwsh
-        run: |
-          python build.py --portable --flutter --server "soporteremoto-diputacion-pre.dacoruna.gal" --key "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
-
       - name: Instalar dependencias de Flutter
         working-directory: flutter
         shell: pwsh
@@ -67,10 +61,10 @@ jobs:
           cargo install flutter_rust_bridge_codegen --version 1.80.1 --features "uuid" --locked
           flutter_rust_bridge_codegen --rust-input .\src\flutter_ffi.rs --dart-output .\flutter\lib\generated_bridge.dart --c-output .\src\bridge_generated.h
 
-      - name: Compilar versión Portable para Windows
+      - name: Compilar versión Portable con el servidor de la Diputación
         shell: pwsh
         run: |
-          python build.py --portable --flutter
+          python build.py --portable --flutter --server "soporteremoto-diputacion-pre.dacoruna.gal" --key "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
 
       - name: Subir artefacto compilado
         uses: actions/upload-artifact@v4
@@ -80,6 +74,7 @@ jobs:
             target/release/*.exe
             flutter/build/windows/runner/Release/*.exe
             *.exe
+
       - name: Subir carpeta portable limpia como artefacto
         uses: actions/upload-artifact@v4
         with:
