@@ -71,11 +71,8 @@ jobs:
           # Reemplaza el servidor por defecto en el código de Rust
           (Get-Content $configFile -Raw) -replace 'rs-ny.rustdesk.com', 'soporteremoto-diputacion-pre.dacoruna.gal' | Set-Content $configFile
 
-      - name: Compilar versión Portable con el servidor de la Diputación
+      - name: Compilar versión Portable limpia
         shell: pwsh
-        env:
-          RENDEZVOUS_SERVER: "soporteremoto-diputacion-pre.dacoruna.gal"
-          RS_PUB_KEY: "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
         run: |
           python build.py --portable --flutter
 
@@ -87,12 +84,6 @@ jobs:
             target/release/*.exe
             flutter/build/windows/runner/Release/*.exe
             *.exe
-
-      - name: Inyectar archivos de configuración en la carpeta portable
-        shell: pwsh
-        run: |
-          Copy-Item "config.json" -Destination "flutter/build/windows/x64/runner/Release/" -Force
-          Copy-Item "config.toml" -Destination "flutter/build/windows/x64/runner/Release/" -Force
 
       - name: Subir carpeta portable limpia como artefacto
         uses: actions/upload-artifact@v4
