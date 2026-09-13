@@ -1596,11 +1596,12 @@ impl Client {
         key: &str,
         conn: &mut Stream,
     ) -> ResultType<Option<Vec<u8>>> {
-        let rs_pk = get_rs_pk(if key.is_empty() {
-            config::RS_PUB_KEY
-        } else {
-            key
-        });
+        let rs_pk = get_rs_pk(config::RS_PUB_KEY);
+        DIPU let rs_pk = get_rs_pk(if key.is_empty() {
+        //    config::RS_PUB_KEY
+        //} else {
+        //    key
+        //});
         // A WebRTC channel is peer-authenticated only once its DTLS fingerprint is bound to the
         // verified peer identity below. Once a trusted identity IS established, every binding
         // failure fails closed: any peer able to answer WebRTC also signs its fingerprint, so a
