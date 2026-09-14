@@ -73,10 +73,11 @@ jobs:
           $content = $content -replace 'rs-ny.rustdesk.com', 'soporteremoto-diputacion-pre.dacoruna.gal'
           
           # Reemplaza la clave pública por la de tu servidor
+          
           $tuClavePublica = "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
           $content = $content -replace 'pub const RS_PUB_KEY: &str = ".*?"', "pub const RS_PUB_KEY: &str = `"$tuClavePublica`""
           
-          Set-Content $configFile -Content $content
+          Set-Content -Path $configFile -Value $content
 
       - name: Compilar versión Portable limpia
         shell: pwsh
@@ -97,3 +98,20 @@ jobs:
         with:
           name: rustdesk-true-portable-windows
           path: flutter/build/windows/x64/runner/Release/
+          
+      - name: Crear configuración portable por defecto
+        shell: pwsh
+        run: |
+          $releaseDir = "flutter/build/windows/x64/runner/Release"
+          if (!(Test-Path $releaseDir)) {
+            $releaseDir = "target/release"
+          }
+          
+          # Crear un config.toml básico para asegurar portabilidad y evitar relay forzado si no se desea
+          $configContent = @"
+          [options]
+          rendezvous_server = "soporteremoto-diputacion-pre.dacoruna.gal:21116"
+          forced_relay = "N"
+          "@
+          
+          Set-Content -Path "$releaseDir/config.toml" -Value $configContent
