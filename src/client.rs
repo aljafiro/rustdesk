@@ -1596,7 +1596,8 @@ impl Client {
         key: &str,
         conn: &mut Stream,
     ) -> ResultType<Option<Vec<u8>>> {
-        let rs_pk = get_rs_pk(config::RS_PUB_KEY);
+        //let rs_pk = get_rs_pk(config::RS_PUB_KEY);
+        let rs_pk = get_rs_pk("mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk=");
         //DIPU let rs_pk = get_rs_pk(if key.is_empty() {
         //    config::RS_PUB_KEY
         //} else {
