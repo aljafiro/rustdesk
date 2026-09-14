@@ -111,6 +111,22 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Reemplazar enlace simbólico por repositorio real
+      shell: bash
+      run: |
+        if [ -d "libs/hbb_common" ] || [ -L "libs/hbb_common" ]; then
+          rm -rf libs/hbb_common
+        fi
+        TOKEN="${{ secrets.GH_PAT }}"
+        if [ -z "$TOKEN" ]; then
+          TOKEN="${{ secrets.SUBMODULE_TOKEN }}"
+        fi
+        if [ -n "$TOKEN" ]; then
+          git clone --depth 1 "https://${TOKEN}@github.com/aljafiro/hbb_common.git" libs/hbb_common
+        else
+          git clone --depth 1 "https://github.com/aljafiro/hbb_common.git" libs/hbb_common
+        fi
+
     - name: Install prerequisites
       shell: bash
       run: |

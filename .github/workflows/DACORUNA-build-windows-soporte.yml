@@ -13,6 +13,20 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Reemplazar enlace simbólico por repositorio real
+        shell: pwsh
+        run: |
+          if (Test-Path "libs/hbb_common") {
+            Remove-Item -Force -Recurse "libs/hbb_common"
+          }
+          $token = "${{ secrets.GH_PAT }}"
+          if (!$token) { $token = "${{ secrets.SUBMODULE_TOKEN }}" }
+          if ($token) {
+            git clone --depth 1 "https://$($token)@github.com/aljafiro/hbb_common.git" libs/hbb_common
+          } else {
+            git clone --depth 1 "https://github.com/aljafiro/hbb_common.git" libs/hbb_common
+          }
+
       - name: Configurar entorno de Rust
         uses: dtolnay/rust-toolchain@stable
         with:
