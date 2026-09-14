@@ -111,7 +111,8 @@ jobs:
           $configContent = @"
           [options]
           rendezvous_server = "soporteremoto-diputacion-pre.dacoruna.gal:21116"
-          forced_relay = "N"
+          incoming-only = true
+          forced_relay = "Y"
           "@
           
           Set-Content -Path "$releaseDir/config.toml" -Value $configContent
