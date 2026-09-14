@@ -73,8 +73,9 @@ jobs:
           $content = $content -replace 'rs-ny.rustdesk.com', 'soporteremoto-diputacion-pre.dacoruna.gal'
           
           # Reemplaza la clave pública por la de tu servidor
-          $content = $content -replace 'pub const RS_PUB_KEY: &str = ".*?"', 'pub const RS_PUB_KEY: &str = "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="'
-      
+          $tuClavePublica = "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
+          $content = $content -replace 'pub const RS_PUB_KEY: &str = ".*?"', "pub const RS_PUB_KEY: &str = `"$tuClavePublica`""
+          
           Set-Content $configFile -Content $content
 
       - name: Compilar versión Portable limpia
