@@ -1,4 +1,4 @@
-name: DACORUNA - Build RustDesk Portable Windows
+name: DACORUNA - Build RustDesk Portable Windows - CLI
 
 on:
   workflow_dispatch:
