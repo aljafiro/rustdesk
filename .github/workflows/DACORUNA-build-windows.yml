@@ -68,8 +68,14 @@ jobs:
           if (!(Test-Path $configFile)) {
             $configFile = "src/common.rs"
           }
-          # Reemplaza el servidor por defecto en el código de Rust
-          (Get-Content $configFile -Raw) -replace 'rs-ny.rustdesk.com', 'soporteremoto-diputacion-pre.dacoruna.gal' | Set-Content $configFile
+          $content = Get-Content $configFile -Raw
+          # Reemplaza el servidor por defecto
+          $content = $content -replace 'rs-ny.rustdesk.com', 'soporteremoto-diputacion-pre.dacoruna.gal'
+          
+          # Reemplaza la clave pública por la de tu servidor
+          $content = $content -replace 'pub const RS_PUB_KEY: &str = ".*?"', 'pub const RS_PUB_KEY: &str = "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="'
+      
+          Set-Content $configFile -Content $content
 
       - name: Compilar versión Portable limpia
         shell: pwsh
