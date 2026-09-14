@@ -1,0 +1,117 @@
+name: DACORUNA - Build RustDesk Portable Windows - SOPORTE
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout al repositorio
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configurar entorno de Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.4'
+          cache: true
+
+      - name: Instalar Visual Studio 2019 Build Tools para compatibilidad con Flutter
+        shell: pwsh
+        run: |
+          choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet" --no-progress
+
+      - name: Configurar Vcpkg e instalar dependencias
+        shell: pwsh
+        run: |
+          vcpkg integrate install
+          vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static --classic
+          
+          $vcpkgDir = "C:/vcpkg"
+          if ($env:VCPKGROOT) { $vcpkgDir = $env:VCPKGROOT }
+          echo "VCPKG_ROOT=$vcpkgDir" >> $env:GITHUB_ENV
+
+      - name: Instalar dependencias de Flutter
+        working-directory: flutter
+        shell: pwsh
+        run: |
+          flutter pub get
+
+      - name: Generar puentes FFI (Flutter Bridge)
+        shell: pwsh
+        run: |
+          cargo install flutter_rust_bridge_codegen --version 1.80.1 --features "uuid" --locked
+          flutter_rust_bridge_codegen --rust-input .\src\flutter_ffi.rs --dart-output .\flutter\lib\generated_bridge.dart --c-output .\src\bridge_generated.h
+
+      - name: Inyectar servidor y clave en el código fuente de Rust
+        shell: pwsh
+        run: |
+          $configFile = "libs/hbb_common/src/config.rs"
+          if (!(Test-Path $configFile)) {
+            $configFile = "src/common.rs"
+          }
+          $content = Get-Content $configFile -Raw
+          # Reemplaza el servidor por defecto
+          $content = $content -replace 'rs-ny.rustdesk.com', 'soporteremoto-diputacion-pre.dacoruna.gal'
+          
+          # Reemplaza la clave pública por la de tu servidor
+          
+          $tuClavePublica = "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
+          $content = $content -replace 'pub const RS_PUB_KEY: &str = ".*?"', "pub const RS_PUB_KEY: &str = `"$tuClavePublica`""
+          
+          Set-Content -Path $configFile -Value $content
+
+      - name: Compilar versión Portable limpia
+        shell: pwsh
+        run: |
+          python build.py --portable --flutter
+
+      - name: Subir artefacto compilado
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustdesk-portable-windows
+          path: |
+            target/release/*.exe
+            flutter/build/windows/runner/Release/*.exe
+            *.exe
+
+      - name: Subir carpeta portable limpia como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustdesk-true-portable-windows
+          path: flutter/build/windows/x64/runner/Release/
+          
+      - name: Crear configuración portable por defecto
+        shell: pwsh
+        run: |
+          $releaseDir = "flutter/build/windows/x64/runner/Release"
+          if (!(Test-Path $releaseDir)) {
+            $releaseDir = "target/release"
+          }
+          
+          # Crear un config.toml básico para asegurar portabilidad y evitar relay forzado si no se desea
+          $configContent = @"
+          [options]
+          rendezvous_server = "soporteremoto-diputacion-pre.dacoruna.gal:21116"
+          forced_relay = "Y"
+          "@
+          
+          Set-Content -Path "$releaseDir/config.toml" -Value $configContent
