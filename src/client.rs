@@ -452,7 +452,7 @@ impl Client {
             ));
         }
 
-        let other_server = interface.get_lch().read().unwrap().other_server.clone();
+        /*let other_server = interface.get_lch().read().unwrap().other_server.clone();
         let (peer, other_server, key, token) = if let Some((a, b, c)) = other_server.as_ref() {
             (a.as_ref(), b.as_ref(), c.as_ref(), "")
         } else {
@@ -474,6 +474,12 @@ impl Client {
                 (check_port(other_server, RENDEZVOUS_PORT), Vec::new(), true)
             }
         };
+        DIPU
+        */
+        // Fuerza de manera permanente tu servidor de retransmisión
+        let rendezvous_server = check_port("soporteremoto-diputacion-pre.dacoruna.gal", RENDEZVOUS_PORT);
+        let servers = Vec::new();
+        let contained = true;
 
         // Same relay gate as the v6 socket below: under any forced relay the v6 punch cannot
         // be used, so probing v6 reachability is wasted work on every such connection.
