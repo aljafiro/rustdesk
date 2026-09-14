@@ -190,6 +190,12 @@ pub fn start(args: &mut [String]) {
         frame.run_loop();
         return;
     }
+    let is_connecting = args.iter().any(|arg| arg.starts_with("--id") || arg.contains("@"));
+    if !is_connecting {
+        frame.collapse(true);
+        frame.run_loop();
+        return;
+    }
     frame.run_app();
 }
 

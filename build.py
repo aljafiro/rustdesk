@@ -157,6 +157,11 @@ def make_parser():
         action='store_true',
         help='Skip cargo build process, only flutter version + Linux supported currently'
     )
+    parser.add_argument(
+        '--incoming-only',
+        action='store_true',
+        help='Build with incoming_only feature'
+    )
     if windows:
         parser.add_argument(
             '--skip-portable-pack',
@@ -322,6 +327,8 @@ def get_features(args):
         features.append('flutter')
     if args.unix_file_copy_paste:
         features.append('unix-file-copy-paste')
+    if hasattr(args, 'incoming_only') and args.incoming_only:
+        features.append('incoming_only')
     if args.drm:
         # Say so rather than quietly handing back a stock build: the backend is Linux-only, so on
         # any other host the flag cannot be honoured and the resulting binary would look like a

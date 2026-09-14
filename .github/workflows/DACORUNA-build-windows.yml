@@ -82,7 +82,7 @@ jobs:
       - name: Compilar versión Portable limpia
         shell: pwsh
         run: |
-          python build.py --portable --flutter
+          python build.py --portable --flutter --incoming-only
 
       - name: Subir artefacto compilado
         uses: actions/upload-artifact@v4
