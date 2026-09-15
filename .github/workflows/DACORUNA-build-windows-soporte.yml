@@ -119,6 +119,7 @@ jobs:
           $configContent = @"
           [options]
           rendezvous_server = "soporteremoto-diputacion-pre.dacoruna.gal:21116"
+          api_server = "https://soporteremoto-diputacion-cau-pre.dacoruna.gal"
           forced_relay = "Y"
           "@
           

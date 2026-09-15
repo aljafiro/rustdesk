@@ -373,6 +373,9 @@ impl Client {
         ),
         (i32, String),
     )> {
+        if hbb_common::config::LocalConfig::get_option("access_token").is_empty() {
+            bail!("Connection not allowed. Please log in first.");
+        }
         debug_assert!(peer == interface.get_id());
         interface.update_direct(None);
         interface.update_received(false);
