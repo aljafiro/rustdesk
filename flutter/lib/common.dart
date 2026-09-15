@@ -3738,12 +3738,12 @@ Widget loadPowered(BuildContext context) {
     cursor: SystemMouseCursors.click,
     child: GestureDetector(
       onTap: () {
-        launchUrl(Uri.parse('https://rustdesk.com'));
+        launchUrl(Uri.parse('https://www.dacoruna.gal'));
       },
       child: Opacity(
           opacity: 0.5,
           child: Text(
-            translate("powered_by_me"),
+            "Deputación provincial de A Coruña",
             overflow: TextOverflow.clip,
             style: Theme.of(context)
                 .textTheme
@@ -3776,45 +3776,33 @@ Future<String?> _resolveLogoAsset(Brightness brightness) async {
   return null;
 }
 
-class _Logo extends StatefulWidget {
+class _Logo extends StatelessWidget {
   const _Logo();
 
   @override
-  State<_Logo> createState() => _LogoState();
-}
-
-class _LogoState extends State<_Logo> {
-  final Map<Brightness, Future<String?>> _logoFutures = {};
-
-  Future<String?> _logoFutureFor(Brightness brightness) {
-    return _logoFutures.putIfAbsent(
-      brightness,
-      () => _resolveLogoAsset(brightness),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<String?>(
-      future: _logoFutureFor(Theme.of(context).brightness),
-      builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
-        final asset = snapshot.data;
-        if (asset != null) {
-          final image = Image.asset(
-            asset,
-            fit: BoxFit.contain,
-            errorBuilder: (ctx, error, stackTrace) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 300, maxHeight: 60),
+      child: Image.network(
+        'https://www.dacoruna.gal/themes/nuevo-diseno/images/deputacion_negative.png',
+        fit: BoxFit.contain,
+        errorBuilder: (ctx, error, stackTrace) {
+          return FutureBuilder<String?>(
+            future: _resolveLogoAsset(Theme.of(context).brightness),
+            builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
+              final asset = snapshot.data;
+              if (asset != null) {
+                return Image.asset(
+                  asset,
+                  fit: BoxFit.contain,
+                );
+              }
               return Container();
             },
           );
-          return Container(
-            constraints: BoxConstraints(maxWidth: 300, maxHeight: 60),
-            child: image,
-          ).marginOnly(left: 12, right: 12, top: 12);
-        }
-        return const Offstage();
-      },
-    );
+        },
+      ),
+    ).marginOnly(left: 12, right: 12, top: 12);
   }
 }
 
@@ -3822,14 +3810,19 @@ class _LogoState extends State<_Logo> {
 Widget loadLogo() => const _Logo();
 
 Widget loadIcon(double size) {
-  return Image.asset('assets/icon.png',
-      width: size,
-      height: size,
-      errorBuilder: (ctx, error, stackTrace) => SvgPicture.asset(
-            'assets/icon.svg',
-            width: size,
-            height: size,
-          ));
+  return Image.network(
+    'https://www.dacoruna.gal/themes/nuevo-diseno/images/deputacion_negative.png',
+    width: size,
+    height: size,
+    errorBuilder: (ctx, error, stackTrace) => Image.asset('assets/icon.png',
+        width: size,
+        height: size,
+        errorBuilder: (ctx, error, stackTrace) => SvgPicture.asset(
+              'assets/icon.svg',
+              width: size,
+              height: size,
+            )),
+  );
 }
 
 var imcomingOnlyHomeSize = Size(280, 300);
