@@ -1508,6 +1508,7 @@ impl Connection {
         info["files"] = json!(files);
         let v = json!({
             "id":json!(Config::get_id()),
+            "host_id":json!(Config::get_id()),
             "uuid":json!(crate::encode64(hbb_common::get_uuid())),
             "peer_id":json!(self.lr.my_id),
             "conn_id":json!(self.inner.id()),
@@ -1533,6 +1534,7 @@ impl Connection {
         }
         let mut v = Value::default();
         v["id"] = json!(Config::get_id());
+        v["host_id"] = json!(Config::get_id());
         v["uuid"] = json!(crate::encode64(hbb_common::get_uuid()));
         v["typ"] = json!(typ as i8);
         v["info"] = serde_json::Value::String(info.to_string());
