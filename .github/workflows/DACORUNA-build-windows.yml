@@ -121,6 +121,7 @@ jobs:
           rendezvous_server = "soporteremoto-diputacion-pre.dacoruna.gal:21116"
           incoming-only = true
           forced_relay = "Y"
+          allow-websocket = "Y"
           "@
           
           Set-Content -Path "$releaseDir/config.toml" -Value $configContent
