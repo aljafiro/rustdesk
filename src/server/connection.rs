@@ -2761,6 +2761,10 @@ impl Connection {
             if !self.check_login_scope(&lr).await {
                 return false;
             }
+            if hbb_common::config::is_incoming_only() && hbb_common::config::LocalConfig::get_option("access_token").is_empty() {
+                self.send_login_error("Connection not allowed. Please log in first.").await;
+                return false;
+            }
             self.awaiting_2fa = false;
             self.handle_login_request_without_validation(&lr).await;
             if self.authorized {

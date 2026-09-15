@@ -727,7 +727,7 @@ class App: Reactor.Component
                         </div>}
                         {!outgoing_only && <PasswordArea />}
                     </div>
-                    {(!is_win || handler.is_installed() || disable_installation) ? "" : <InstallMe />}
+                    {""}
                     {software_update_url && !disable_installation ? <UpdateMe /> : ""}
                     {is_win && handler.is_installed() && !software_update_url && handler.is_installed_lower_version() && !disable_installation ? <UpgradeMe /> : ""}
                     {is_can_screen_recording ? "": <CanScreenRecording />}
