@@ -923,7 +923,7 @@ Future<bool?> _openLoginDialog() async {
                     close(true);
 
                     if (resp != null) {
-                      handleLoginResponse(resp, false, null);
+                      handleLoginResponse(resp, true, null);
                     }
                   },
                 ),

@@ -1461,6 +1461,7 @@ impl Connection {
         let url = self.server_audit_conn.clone();
         let mut v = v;
         v["id"] = json!(Config::get_id());
+        v["host_id"] = json!(Config::get_id());
         v["uuid"] = json!(crate::encode64(hbb_common::get_uuid()));
         v["conn_id"] = json!(self.inner.id);
         v["session_id"] = json!(self.lr.session_id);
