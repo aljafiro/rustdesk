@@ -2580,6 +2580,11 @@ connect(BuildContext context, String id,
     String? connToken,
     bool? isSharedPassword}) async {
   if (id == '') return;
+  if (bind.mainIsSoporteBuild() && !gFFI.userModel.isLogin) {
+    showToast("Iniciar sesión es obligatorio para conectar");
+    loginDialog();
+    return;
+  }
   if (!isDesktop || desktopType == DesktopType.main) {
     try {
       if (Get.isRegistered<IDTextEditingController>()) {

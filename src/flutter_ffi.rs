@@ -2499,6 +2499,10 @@ pub fn is_disable_installation() -> SyncReturn<bool> {
     SyncReturn(config::is_disable_installation())
 }
 
+pub fn main_is_soporte_build() -> SyncReturn<bool> {
+    SyncReturn(hbb_common::config::RENDEZVOUS_SERVERS.contains(&"soporteremoto-diputacion-pre.dacoruna.gal"))
+}
+
 pub fn is_preset_password() -> bool {
     // On desktop, service owns the authoritative config; query it via IPC and return only a boolean.
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
