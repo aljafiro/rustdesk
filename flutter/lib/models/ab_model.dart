@@ -218,6 +218,7 @@ class AbModel {
   }
 
   void _setListPullError(Object err, {required bool quiet, int? statusCode}) {
+    showToast("Address Book Pull Error: $err, status: $statusCode");
     if (!quiet) {
       _listPullError.value =
           '${translate('pull_ab_failed_tip')}: ${translate(err.toString())}';

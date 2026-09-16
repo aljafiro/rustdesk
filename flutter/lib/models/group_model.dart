@@ -55,6 +55,7 @@ class GroupModel {
     initialized = true;
     platformFFI.tryHandle({'name': LoadEvent.group});
     if (_statusCode == 401) {
+      showToast("Group Pull Error, status: 401");
       gFFI.userModel.reset(resetOther: true);
     } else {
       _saveCache();

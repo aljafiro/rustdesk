@@ -818,6 +818,7 @@ Future<bool?> _openLoginDialog() async {
           }
           break;
         default:
+          showToast("Login error: bad response type from server: '${resp.type}'");
           passwordMsg = "Failed, bad response from server";
           break;
       }
@@ -917,13 +918,16 @@ Future<bool?> _openLoginDialog() async {
                       resp =
                           gFFI.userModel.getLoginResponseFromAuthBody(authBody);
                     } catch (e) {
+                      showToast("Failed to parse login response: $e");
                       debugPrint(
                           'Failed to parse oidc login body: "$authBody"');
                     }
 
                     if (resp != null) {
+                      showToast("OIDC Success: type='${resp.type}', tokenLength=${resp.access_token?.length ?? 0}");
                       await handleLoginResponse(resp, true, close);
                     } else {
+                      showToast("OIDC Error: parsed response is null");
                       close(true);
                     }
                   },
