@@ -920,10 +920,11 @@ Future<bool?> _openLoginDialog() async {
                       debugPrint(
                           'Failed to parse oidc login body: "$authBody"');
                     }
-                    close(true);
 
                     if (resp != null) {
-                      handleLoginResponse(resp, true, null);
+                      await handleLoginResponse(resp, true, close);
+                    } else {
+                      close(true);
                     }
                   },
                 ),
