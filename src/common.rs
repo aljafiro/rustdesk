@@ -744,8 +744,8 @@ async fn test_nat_type_() -> ResultType<bool> {
 }
 
 pub async fn get_rendezvous_server(_ms_timeout: u64) -> (String, Vec<String>, bool) {
-    let a = "soporteremoto-diputacion-pre.dacoruna.gal".to_owned();
-    let b = vec!["soporteremoto-diputacion-pre.dacoruna.gal".to_owned()];
+    let a = "soporteremoto-diputacion-pre.dacoruna.gal:21116".to_owned();
+    let b = vec![];
     (a, b, true)
 }
 
