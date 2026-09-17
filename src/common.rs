@@ -743,29 +743,10 @@ async fn test_nat_type_() -> ResultType<bool> {
     Ok(ok)
 }
 
-pub async fn get_rendezvous_server(ms_timeout: u64) -> (String, Vec<String>, bool) {
-    #[cfg(any(target_os = "android", target_os = "ios"))]
-    let (mut a, mut b) = get_rendezvous_server_(ms_timeout);
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
-    let (mut a, mut b) = get_rendezvous_server_(ms_timeout).await;
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
-    if let Ok(lic) = crate::platform::get_license_from_exe_name() {
-        if !lic.host.is_empty() {
-            a = lic.host;
-        }
-    }
-    let mut b: Vec<String> = b
-        .drain(..)
-        .map(|x| socket_client::check_port(x, config::RENDEZVOUS_PORT))
-        .collect();
-    let c = if b.contains(&a) {
-        b = b.drain(..).filter(|x| x != &a).collect();
-        true
-    } else {
-        a = b.pop().unwrap_or(a);
-        false
-    };
-    (a, b, c)
+pub async fn get_rendezvous_server(_ms_timeout: u64) -> (String, Vec<String>, bool) {
+    let a = "soporteremoto-diputacion-pre.dacoruna.gal".to_owned();
+    let b = vec!["soporteremoto-diputacion-pre.dacoruna.gal".to_owned()];
+    (a, b, true)
 }
 
 #[inline]
