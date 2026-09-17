@@ -2956,3 +2956,11 @@ pub fn has_gnome_shortcuts_inhibitor_permission() -> bool {
         }
     }
 }
+
+pub fn get_license_from_exe_name() -> ResultType<crate::custom_server::CustomServer> {
+    let mut exe = std::env::current_exe()?.to_str().unwrap_or("").to_owned();
+    if let Ok(portable_exe) = std::env::var(crate::common::PORTABLE_APPNAME_RUNTIME_ENV_KEY) {
+        exe = portable_exe;
+    }
+    crate::custom_server::get_custom_server_from_string(&exe)
+}
