@@ -180,13 +180,22 @@ class GroupModel {
             });
         final resp = await http.get(uri, headers: getHttpHeaders());
         _statusCode = resp.statusCode;
+        if (resp.statusCode == 403 ||
+            resp.statusCode == 404 ||
+            resp.statusCode == 405 ||
+            resp.statusCode == 501) {
+          debugPrint('get accessible users not supported/allowed: ${resp.statusCode}');
+          return true;
+        }
         Map<String, dynamic> json =
             _jsonDecodeResp(decode_http_response(resp), resp.statusCode);
         if (json.containsKey('error')) {
-          if (json['error'] == 'Admin required!' ||
-              json['error']
-                  .toString()
-                  .contains('ambiguous column name: status')) {
+          final errStr = json['error'].toString();
+          if (errStr == 'Admin required!' || errStr.contains('Admin required')) {
+            debugPrint('get accessible users admin required');
+            return true;
+          }
+          if (errStr.contains('ambiguous column name: status')) {
             throw translate('upgrade_rustdesk_server_pro_to_{1.1.10}_tip');
           } else {
             throw json['error'];
@@ -245,10 +254,21 @@ class GroupModel {
             queryParameters: queryParameters);
         final resp = await http.get(uri, headers: getHttpHeaders());
         _statusCode = resp.statusCode;
-
+        if (resp.statusCode == 403 ||
+            resp.statusCode == 404 ||
+            resp.statusCode == 405 ||
+            resp.statusCode == 501) {
+          debugPrint('get accessible peers not supported/allowed: ${resp.statusCode}');
+          return true;
+        }
         Map<String, dynamic> json =
             _jsonDecodeResp(decode_http_response(resp), resp.statusCode);
         if (json.containsKey('error')) {
+          final errStr = json['error'].toString();
+          if (errStr == 'Admin required!' || errStr.contains('Admin required')) {
+            debugPrint('get accessible peers admin required');
+            return true;
+          }
           throw json['error'];
         }
         if (resp.statusCode != 200) {

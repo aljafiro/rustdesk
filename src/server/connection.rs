@@ -1612,16 +1612,19 @@ impl Connection {
                             if text.trim().is_empty() {
                                 return Ok(text);
                             }
-                            let server_err = serde_json::from_str::<Value>(&text)
-                                .ok()
-                                .and_then(|v| v.get("error")?.as_str().map(|s| s.to_owned()))
-                                .filter(|e| !e.is_empty());
-                            let (label, detail) = match &server_err {
-                                Some(e) => ("server error", e.as_str()),
-                                None => ("unexpected response body", text.as_str()),
-                            };
-                            let brief: String = detail.chars().take(128).collect();
-                            (true, format!("{}: {}", label, brief))
+                            // BetterDesk or some proxy configurations may return a valid
+                            // JSON block like `{}` on success. If the body is a valid JSON
+                            // and does not contain an "error" key, we treat it as a success.
+                            if let Ok(json_val) = serde_json::from_str::<Value>(&text) {
+                                if let Some(err) = json_val.get("error").and_then(|v| v.as_str()).filter(|e| !e.is_empty()) {
+                                    (true, format!("server error: {}", err))
+                                } else {
+                                    return Ok(text);
+                                }
+                            } else {
+                                let brief: String = text.chars().take(128).collect();
+                                (true, format!("unexpected response body: {}", brief))
+                            }
                         } else {
                             let brief: String = text.chars().take(128).collect();
                             // 408 and 429 are the transient 4xx: the request timed
