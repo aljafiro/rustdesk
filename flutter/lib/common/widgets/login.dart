@@ -924,10 +924,9 @@ Future<bool?> _openLoginDialog() async {
                     }
 
                     if (resp != null) {
-                      showToast("OIDC Success: type='${resp.type}', tokenLength=${resp.access_token?.length ?? 0}");
                       await handleLoginResponse(resp, true, close);
+                      await UserModel.updateOtherModels();
                     } else {
-                      showToast("OIDC Error: parsed response is null");
                       close(true);
                     }
                   },

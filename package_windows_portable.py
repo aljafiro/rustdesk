@@ -11,7 +11,17 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
 # Default Paths (Adjust these if your build directory is different)
-DEFAULT_RELEASE_DIR = r"build\windows\x64\runner\Release"
+POSSIBLE_RELEASE_DIRS = [
+    r"flutter\build\windows\x64\runner\Release",
+    r"flutter\build\windows\runner\Release",
+    r"build\windows\x64\runner\Release",
+]
+DEFAULT_RELEASE_DIR = POSSIBLE_RELEASE_DIRS[0]
+for d in POSSIBLE_RELEASE_DIRS:
+    if os.path.exists(d):
+        DEFAULT_RELEASE_DIR = d
+        break
+
 OUTPUT_EVB_FILE = "soporte_deputacion.evb"
 FINAL_EXE_NAME = "Soporte_Deputacion.exe"
 
@@ -67,7 +77,7 @@ def generate_evb(release_dir, evb_output_path, final_exe):
     ET.SubElement(root, "Output_File").text = os.path.abspath(final_exe)
     ET.SubElement(root, "Compression").text = "true"
     ET.SubElement(root, "Share_Virtual_System").text = "true"
-    ET.SubElement(root, "Map_Executables").text = "true"
+    ET.SubElement(root, "Map_Executables").text = "false"
     
     # Files Node
     files_root = ET.SubElement(root, "Files")

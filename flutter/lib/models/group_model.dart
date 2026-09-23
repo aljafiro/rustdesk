@@ -41,6 +41,7 @@ class GroupModel {
     if (!gFFI.userModel.isLogin || groupLoading.value) return;
     if (gFFI.userModel.networkError.isNotEmpty) return;
     if (!force && initialized) return;
+    _statusCode = 200;
     if (!quiet) {
       groupLoading.value = true;
       groupLoadError.value = "";
@@ -54,12 +55,7 @@ class GroupModel {
     groupLoading.value = false;
     initialized = true;
     platformFFI.tryHandle({'name': LoadEvent.group});
-    if (_statusCode == 401) {
-      showToast("Group Pull Error, status: 401");
-      gFFI.userModel.reset(resetOther: true);
-    } else {
-      _saveCache();
-    }
+    _saveCache();
   }
 
   Future<void> _pull() async {
@@ -122,6 +118,14 @@ class GroupModel {
             });
         final resp = await http.get(uri, headers: getHttpHeaders());
         _statusCode = resp.statusCode;
+        if (resp.statusCode == 401 ||
+            resp.statusCode == 403 ||
+            resp.statusCode == 404 ||
+            resp.statusCode == 405 ||
+            resp.statusCode == 501) {
+          debugPrint('get accessible device groups not supported/allowed: ${resp.statusCode}');
+          return true;
+        }
         Map<String, dynamic> json =
             _jsonDecodeResp(decode_http_response(resp), resp.statusCode);
         if (json.containsKey('error')) {

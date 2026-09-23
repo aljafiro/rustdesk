@@ -2583,8 +2583,10 @@ connect(BuildContext context, String id,
   if (id == '') return;
   if (bind.mainIsSoporteBuild() && !gFFI.userModel.isLogin) {
     showToast("Iniciar sesión es obligatorio para conectar");
-    loginDialog();
-    return;
+    final loggedIn = await loginDialog();
+    if (loggedIn != true || !gFFI.userModel.isLogin) {
+      return;
+    }
   }
   if (!isDesktop || desktopType == DesktopType.main) {
     try {
