@@ -184,7 +184,8 @@ class GroupModel {
             });
         final resp = await http.get(uri, headers: getHttpHeaders());
         _statusCode = resp.statusCode;
-        if (resp.statusCode == 403 ||
+        if (resp.statusCode == 401 ||
+            resp.statusCode == 403 ||
             resp.statusCode == 404 ||
             resp.statusCode == 405 ||
             resp.statusCode == 501) {
@@ -195,8 +196,11 @@ class GroupModel {
             _jsonDecodeResp(decode_http_response(resp), resp.statusCode);
         if (json.containsKey('error')) {
           final errStr = json['error'].toString();
-          if (errStr == 'Admin required!' || errStr.contains('Admin required')) {
-            debugPrint('get accessible users admin required');
+          if (errStr == 'Admin required!' ||
+              errStr.contains('Admin required') ||
+              errStr.contains('Unauthorized') ||
+              errStr.contains('unauthorized')) {
+            debugPrint('get accessible users admin/auth required');
             return true;
           }
           if (errStr.contains('ambiguous column name: status')) {
@@ -229,8 +233,6 @@ class GroupModel {
       return true;
     } catch (err) {
       debugPrint('get accessible users: $err');
-      groupLoadError.value =
-          '${translate('pull_group_failed_tip')}: ${translate(err.toString())}';
     }
     return false;
   }
@@ -258,7 +260,8 @@ class GroupModel {
             queryParameters: queryParameters);
         final resp = await http.get(uri, headers: getHttpHeaders());
         _statusCode = resp.statusCode;
-        if (resp.statusCode == 403 ||
+        if (resp.statusCode == 401 ||
+            resp.statusCode == 403 ||
             resp.statusCode == 404 ||
             resp.statusCode == 405 ||
             resp.statusCode == 501) {
@@ -269,7 +272,10 @@ class GroupModel {
             _jsonDecodeResp(decode_http_response(resp), resp.statusCode);
         if (json.containsKey('error')) {
           final errStr = json['error'].toString();
-          if (errStr == 'Admin required!' || errStr.contains('Admin required')) {
+          if (errStr == 'Admin required!' ||
+              errStr.contains('Admin required') ||
+              errStr.contains('Unauthorized') ||
+              errStr.contains('unauthorized')) {
             debugPrint('get accessible peers admin required');
             return true;
           }
@@ -300,8 +306,6 @@ class GroupModel {
       return true;
     } catch (err) {
       debugPrint('get accessible peers: $err');
-      groupLoadError.value =
-          '${translate('pull_group_failed_tip')}: ${translate(err.toString())}';
     }
     return false;
   }
