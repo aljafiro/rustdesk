@@ -895,11 +895,28 @@ Future<bool?> _openLoginDialog() async {
                 const SizedBox(
                   height: 8.0,
                 ),
-                Center(
+                if (!bind.mainIsSoporteBuild())
+                  Center(
+                      child: Text(
+                    translate('or'),
+                    style: TextStyle(fontSize: 16),
+                  ))
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
                     child: Text(
-                  translate('or'),
-                  style: TextStyle(fontSize: 16),
-                )),
+                      "Inicie sesión con su cuenta corporativa para acceder al servicio de soporte de la Diputación de A Coruña.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.color
+                            ?.withOpacity(0.85),
+                      ),
+                    ),
+                  ),
                 const SizedBox(
                   height: 8.0,
                 ),
@@ -941,7 +958,9 @@ Future<bool?> _openLoginDialog() async {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          translate('Login'),
+          bind.mainIsSoporteBuild()
+              ? "Acceso Soporte Deputación"
+              : translate('Login'),
         ).marginOnly(top: MyTheme.dialogPadding),
         MouseRegion(
           onEnter: (_) => setState(() => isCloseHovered = true),
@@ -979,21 +998,22 @@ Future<bool?> _openLoginDialog() async {
           const SizedBox(
             height: 8.0,
           ),
-          LoginWidgetUserPass(
-            username: username,
-            pass: password,
-            usernameMsg: usernameMsg,
-            passMsg: passwordMsg,
-            isInProgress: isInProgress,
-            curOP: curOP,
-            onLogin: onLogin,
-            userFocusNode: userFocusNode,
-          ),
+          if (!bind.mainIsSoporteBuild())
+            LoginWidgetUserPass(
+              username: username,
+              pass: password,
+              usernameMsg: usernameMsg,
+              passMsg: passwordMsg,
+              isInProgress: isInProgress,
+              curOP: curOP,
+              onLogin: onLogin,
+              userFocusNode: userFocusNode,
+            ),
           thirdAuthWidget(),
         ],
       ),
       onCancel: onDialogCancel,
-      onSubmit: onLogin,
+      onSubmit: bind.mainIsSoporteBuild() ? null : onLogin,
     );
   }).whenComplete(oidcAuth.close);
 
