@@ -2846,8 +2846,12 @@ impl Connection {
                 },
             );
 
-            if !crate::common::is_direct_ip_access(&lr.username) && lr.username != Config::get_id()
-            {
+            if crate::common::is_direct_ip_access(&lr.username) {
+                log::warn!("Rejecting direct IP connection: only authenticated server-routed connections allowed");
+                self.send_login_error("Direct IP access is disabled.").await;
+                return false;
+            }
+            if lr.username != Config::get_id() {
                 self.send_login_error(crate::client::LOGIN_MSG_OFFLINE)
                     .await;
                 return false;
