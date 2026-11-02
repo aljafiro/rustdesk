@@ -1,0 +1,8 @@
+{
+  "environment": "PRE",
+  "rendezvous_server": "soporteremoto-diputacion-pre.dacoruna.gal",
+  "rendezvous_port": 21116,
+  "api_server": "https://soporteremoto-diputacion-cau-pre.dacoruna.gal",
+  "key": "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk=",
+  "forced_relay": "Y"
+}

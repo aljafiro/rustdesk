@@ -743,16 +743,26 @@ async fn test_nat_type_() -> ResultType<bool> {
     Ok(ok)
 }
 
+pub const DEFAULT_API_SERVER: &str = "https://soporteremoto-diputacion-cau-pre.dacoruna.gal";
+
 pub async fn get_rendezvous_server(_ms_timeout: u64) -> (String, Vec<String>, bool) {
     let mut custom = Config::get_option("custom-rendezvous-server");
     if custom.is_empty() {
         custom = Config::get_option("relay-server");
     }
-    if !custom.is_empty() && custom != "soporteremoto-diputacion-pre.dacoruna.gal" {
+    let default_server = config::RENDEZVOUS_SERVERS
+        .first()
+        .copied()
+        .unwrap_or("soporteremoto-diputacion-pre.dacoruna.gal");
+    if !custom.is_empty() && custom != default_server {
         let a = socket_client::check_port(custom, config::RENDEZVOUS_PORT);
         return (a, vec![], true);
     }
-    let a = "soporteremoto-diputacion-pre.dacoruna.gal:21116".to_owned();
+    let a = if default_server.contains(':') {
+        default_server.to_string()
+    } else {
+        format!("{}:{}", default_server, config::RENDEZVOUS_PORT)
+    };
     let b = vec![];
     (a, b, true)
 }
@@ -1080,7 +1090,11 @@ pub fn get_custom_rendezvous_server(custom: String) -> String {
     if !custom.is_empty() {
         return custom;
     }
-    "soporteremoto-diputacion-pre.dacoruna.gal".to_owned()
+    config::RENDEZVOUS_SERVERS
+        .first()
+        .copied()
+        .unwrap_or("soporteremoto-diputacion-pre.dacoruna.gal")
+        .to_owned()
 }
 
 #[inline]
@@ -1105,8 +1119,16 @@ fn get_api_server_(api: String, custom: String) -> String {
     if !api.is_empty() {
         return api;
     }
+    let opt_api = Config::get_option("api-server");
+    if !opt_api.is_empty() {
+        return opt_api;
+    }
+    let default_server = config::RENDEZVOUS_SERVERS
+        .first()
+        .copied()
+        .unwrap_or("soporteremoto-diputacion-pre.dacoruna.gal");
     let s0 = get_custom_rendezvous_server(custom);
-    if !s0.is_empty() && s0 != "soporteremoto-diputacion-pre.dacoruna.gal" {
+    if !s0.is_empty() && s0 != default_server {
         let s = crate::increase_port(&s0, -2);
         if s == s0 {
             return format!("http://{}:{}", s, config::RENDEZVOUS_PORT - 2);
@@ -1114,7 +1136,11 @@ fn get_api_server_(api: String, custom: String) -> String {
             return format!("http://{}", s);
         }
     }
-    "https://soporteremoto-diputacion-cau-pre.dacoruna.gal".to_owned()
+    let default_api = Config::get_option("api_server");
+    if !default_api.is_empty() {
+        return default_api;
+    }
+    DEFAULT_API_SERVER.to_owned()
 }
 
 #[inline]

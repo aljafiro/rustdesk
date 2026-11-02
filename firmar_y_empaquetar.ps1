@@ -12,6 +12,8 @@
 
 param (
     [string]$ReleaseDir = "",
+    [ValidateSet("PRE", "PRO", "pre", "pro")]
+    [string]$Env = "PRE",
     [string]$CertSubject = "Deputacion",  # Nombre o parte del sujeto del certificado instalado en el almacén de Windows
     [string]$CertFile = "",               # Opcional: Ruta a archivo .pfx
     [string]$CertPassword = "",           # Opcional: Contraseña del .pfx
@@ -88,6 +90,17 @@ function Sign-File([string]$FilePath) {
     }
 }
 
+# Inyectar la configuración del entorno seleccionado en el ReleaseDir
+Write-Host "`n[*] Configurando entorno: $Env" -ForegroundColor Cyan
+if (Test-Path "configure_env.py") {
+    $cliFlag = if ($ReleaseDir -match "CLI") { "--incoming-only" } else { "" }
+    if ($cliFlag) {
+        python configure_env.py generate-toml $Env --output $ReleaseDir --incoming-only
+    } else {
+        python configure_env.py generate-toml $Env --output $ReleaseDir
+    }
+}
+
 # 3. Firmar todos los ficheros ejecutables y librerías internas
 Write-Host "`n[PASO 1] Firmando binarios internos en $ReleaseDir ..." -ForegroundColor Yellow
 $filesToSign = Get-ChildItem -Path $ReleaseDir -Include *.exe, *.dll -Recurse
@@ -96,16 +109,25 @@ foreach ($file in $filesToSign) {
 }
 Write-Host "[+] Todos los binarios internos (.exe y .dll) han sido firmados correctamente." -ForegroundColor Green
 
-# 4. Generar el ejecutable único con el empaquetador oficial de RustDesk
-Write-Host "`n[PASO 2] Empaquetando con el empaquetador nativo de RustDesk ..." -ForegroundColor Yellow
-python package_official_portable.py $ReleaseDir
+# 4. Determinar nombre del ejecutable final según la carpeta y el entorno
+$envUpper = $Env.ToUpper()
+$finalExe = if ($ReleaseDir -match "SOPO") {
+    "SoporteDiputacion-SOPO_${envUpper}_Portable.exe"
+} elseif ($ReleaseDir -match "CLI") {
+    "SoporteDiputacion-CLI_${envUpper}_Portable.exe"
+} else {
+    "Soporte_Deputacion_${envUpper}_Portable.exe"
+}
+
+# Generar el ejecutable único con el empaquetador oficial de RustDesk
+Write-Host "`n[PASO 2] Empaquetando con el empaquetador nativo de RustDesk ($finalExe) ..." -ForegroundColor Yellow
+python package_official_portable.py $ReleaseDir $finalExe
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[!] Error durante el empaquetado oficial." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 # 5. Firmar el ejecutable único exterior
-$finalExe = "Soporte_Deputacion_Portable.exe"
 if (Test-Path $finalExe) {
     Write-Host "`n[PASO 3] Firmando el ejecutable final $finalExe ..." -ForegroundColor Yellow
     Sign-File (Resolve-Path $finalExe).Path

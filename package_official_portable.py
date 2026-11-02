@@ -92,28 +92,48 @@ def main():
         main_exe,
     ]
 
+    # En Linux / cross-compilation necesitamos especificar el target de Windows
+    if sys.platform != "win32":
+        cmd.extend(["-t", "x86_64-pc-windows-gnu"])
+
     print(f"[*] Executing official packager: {' '.join(cmd)}")
     result = subprocess.run(cmd)
     if result.returncode != 0:
         print("[!] Official packaging failed.")
         sys.exit(result.returncode)
 
-    # Locate generated binary
-    packer_exe = os.path.join("target", "release", "rustdesk-portable-packer.exe")
-    if not os.path.exists(packer_exe):
-        # Check target/x86_64-pc-windows-msvc/release/
-        packer_exe_alt = os.path.join(
-            "target", "x86_64-pc-windows-msvc", "release", "rustdesk-portable-packer.exe"
-        )
-        if os.path.exists(packer_exe_alt):
-            packer_exe = packer_exe_alt
-
-    if os.path.exists(packer_exe):
-        shutil.copyfile(packer_exe, FINAL_EXE_NAME)
-        print(f"\n[+] SUCCESS! Official portable single-file binary created: '{FINAL_EXE_NAME}'")
-        print(f"[*] You can now sign '{FINAL_EXE_NAME}' with signtool and distribute it.")
+    # Determinar nombre del ejecutable final (soporta argumento opcional o deriva del nombre de la carpeta)
+    folder_base = os.path.basename(os.path.normpath(release_dir))
+    if len(sys.argv) > 2:
+        final_exe_name = sys.argv[2]
+        if not final_exe_name.lower().endswith(".exe"):
+            final_exe_name += ".exe"
+    elif folder_base and folder_base.lower() not in ["release", "runner"]:
+        final_exe_name = f"{folder_base}_Portable.exe"
     else:
-        print(f"[!] Warning: Built package finished but '{packer_exe}' was not found.")
+        final_exe_name = FINAL_EXE_NAME
+
+    # Locate generated binary
+    search_paths = [
+        os.path.join("target", "x86_64-pc-windows-gnu", "release", "rustdesk-portable-packer.exe"),
+        os.path.join("target", "x86_64-pc-windows-msvc", "release", "rustdesk-portable-packer.exe"),
+        os.path.join("target", "release", "rustdesk-portable-packer.exe"),
+        os.path.join("libs", "portable", "target", "x86_64-pc-windows-gnu", "release", "rustdesk-portable-packer.exe"),
+        os.path.join("libs", "portable", "target", "release", "rustdesk-portable-packer.exe"),
+    ]
+
+    packer_exe = None
+    for p in search_paths:
+        if os.path.exists(p):
+            packer_exe = p
+            break
+
+    if packer_exe:
+        shutil.copyfile(packer_exe, final_exe_name)
+        print(f"\n[+] SUCCESS! Official portable single-file binary created: '{final_exe_name}'")
+        print(f"[*] You can now sign '{final_exe_name}' with osslsigncode/signtool and distribute it.")
+    else:
+        print(f"[!] Warning: Built package finished but packer binary was not found in: {search_paths}")
 
 if __name__ == "__main__":
     main()

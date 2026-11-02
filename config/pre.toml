@@ -1,0 +1,6 @@
+# Configuración para entorno de PRE (Preproducción) - Deputación da Coruña
+[options]
+rendezvous_server = "soporteremoto-diputacion-pre.dacoruna.gal:21116"
+api_server = "https://soporteremoto-diputacion-cau-pre.dacoruna.gal"
+key = "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
+forced_relay = "Y"

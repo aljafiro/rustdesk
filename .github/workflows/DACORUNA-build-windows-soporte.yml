@@ -2,6 +2,15 @@ name: DACORUNA - Build RustDesk Portable Windows - SOPORTE
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Entorno de configuración (PRE o PRO)'
+        required: true
+        default: 'PRE'
+        type: choice
+        options:
+          - PRE
+          - PRO
 
 jobs:
   build:
@@ -75,23 +84,12 @@ jobs:
           cargo install flutter_rust_bridge_codegen --version 1.80.1 --features "uuid" --locked
           flutter_rust_bridge_codegen --rust-input .\src\flutter_ffi.rs --dart-output .\flutter\lib\generated_bridge.dart --c-output .\src\bridge_generated.h
 
-      - name: Inyectar servidor y clave en el código fuente de Rust
+      - name: Inyectar configuración del entorno en el código fuente de Rust
         shell: pwsh
         run: |
-          $configFile = "libs/hbb_common/src/config.rs"
-          if (!(Test-Path $configFile)) {
-            $configFile = "src/common.rs"
-          }
-          $content = Get-Content $configFile -Raw
-          # Reemplaza el servidor por defecto
-          $content = $content -replace 'rs-ny.rustdesk.com', 'soporteremoto-diputacion-pre.dacoruna.gal'
-          
-          # Reemplaza la clave pública por la de tu servidor
-          
-          $tuClavePublica = "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
-          $content = $content -replace 'pub const RS_PUB_KEY: &str = ".*?"', "pub const RS_PUB_KEY: &str = `"$tuClavePublica`""
-          
-          Set-Content -Path $configFile -Value $content
+          $envName = "${{ inputs.environment }}"
+          if (!$envName) { $envName = "PRE" }
+          python configure_env.py apply $envName
 
       - name: Compilar versión Portable limpia
         shell: pwsh
@@ -114,16 +112,9 @@ jobs:
           if (!(Test-Path $releaseDir)) {
             $releaseDir = "target/release"
           }
-          
-          # Crear un config.toml básico para asegurar portabilidad y evitar relay forzado si no se desea
-          $configContent = @"
-          [options]
-          rendezvous_server = "soporteremoto-diputacion-pre.dacoruna.gal:21116"
-          api_server = "https://soporteremoto-diputacion-cau-pre.dacoruna.gal"
-          forced_relay = "Y"
-          "@
-          
-          Set-Content -Path "$releaseDir/config.toml" -Value $configContent
+          $envName = "${{ inputs.environment }}"
+          if (!$envName) { $envName = "PRE" }
+          python configure_env.py generate-toml $envName --output "$releaseDir"
 
       - name: Subir carpeta portable limpia como artefacto
         uses: actions/upload-artifact@v4
@@ -134,10 +125,13 @@ jobs:
       - name: Empaquetar ejecutable único portable oficial de RustDesk
         shell: pwsh
         run: |
-          python package_official_portable.py
+          $envName = "${{ inputs.environment }}"
+          if (!$envName) { $envName = "PRE" }
+          $finalExe = "SoporteDiputacion-SOPO_${envName}_Portable.exe"
+          python package_official_portable.py "flutter/build/windows/x64/runner/Release" $finalExe
 
       - name: Subir ejecutable único portable oficial
         uses: actions/upload-artifact@v4
         with:
-          name: Soporte_Deputacion_Portable_EXE
-          path: Soporte_Deputacion_Portable.exe
+          name: SoporteDiputacion-SOPO_${{ inputs.environment || 'PRE' }}_Portable_EXE
+          path: SoporteDiputacion-SOPO_${{ inputs.environment || 'PRE' }}_Portable.exe

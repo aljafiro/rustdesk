@@ -1,0 +1,7 @@
+# Configuración para entorno de PRO (Producción) - Deputación da Coruña
+# Modificar los valores cuando las credenciales de producción estén disponibles
+[options]
+rendezvous_server = "soporteremoto-diputacion-pre.dacoruna.gal:21116"
+api_server = "https://soporteremoto-diputacion-cau-pre.dacoruna.gal"
+key = "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk="
+forced_relay = "Y"
