@@ -3791,8 +3791,13 @@ class _Logo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(maxWidth: 300, maxHeight: 60),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Image.network(
-        'https://www.dacoruna.gal/themes/nuevo-diseno/images/deputacion_negative.png',
+        'https://www.dacoruna.gal/themes/nuevo-diseno/images/deputacion.png',
         fit: BoxFit.contain,
         errorBuilder: (ctx, error, stackTrace) {
           return FutureBuilder<String?>(
@@ -3805,7 +3810,10 @@ class _Logo extends StatelessWidget {
                   fit: BoxFit.contain,
                 );
               }
-              return Container();
+              return SvgPicture.asset(
+                'assets/icon.svg',
+                fit: BoxFit.contain,
+              );
             },
           );
         },
@@ -3818,18 +3826,19 @@ class _Logo extends StatelessWidget {
 Widget loadLogo() => const _Logo();
 
 Widget loadIcon(double size) {
-  return Image.network(
-    'https://www.dacoruna.gal/themes/nuevo-diseno/images/deputacion_negative.png',
+  return Container(
     width: size,
     height: size,
-    errorBuilder: (ctx, error, stackTrace) => Image.asset('assets/icon.png',
-        width: size,
-        height: size,
-        errorBuilder: (ctx, error, stackTrace) => SvgPicture.asset(
-              'assets/icon.svg',
-              width: size,
-              height: size,
-            )),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(size * 0.2),
+    ),
+    padding: EdgeInsets.all(size * 0.08),
+    child: SvgPicture.asset(
+      'assets/icon.svg',
+      width: size,
+      height: size,
+    ),
   );
 }
 

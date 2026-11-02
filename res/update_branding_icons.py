@@ -17,12 +17,13 @@ CORP_SVG = os.path.join(SCRIPT_DIR, "corporate_icon.svg")
 
 
 def make_square_svg(inner_paths_str: str, size: int) -> str:
-    # El icono corporativo tiene dimensiones 39x68.
-    # En un viewBox de 72x72 centrado:
-    #   horizontal: (72 - 39) / 2 = 16.5 -> x offset = -16.5
-    #   vertical:   (72 - 68) / 2 = 2.0  -> y offset = -2.0
-    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="-16.5 -2 72 72" fill="none">
+    # Canvas de 72x72 con fondo blanco redondeado para máxima visibilidad en fondos oscuros y claros
+    # El escudo original tiene 38x68. Con escala 0.82 queda en 31.16 x 55.76 centrado en 72x72
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 72 72" fill="none">
+  <rect x="2" y="2" width="68" height="68" rx="15" ry="15" fill="#FFFFFF"/>
+  <g transform="translate(20.42, 8.12) scale(0.82)">
 {inner_paths_str}
+  </g>
 </svg>"""
 
 
