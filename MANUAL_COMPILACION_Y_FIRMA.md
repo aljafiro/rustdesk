@@ -109,43 +109,65 @@ Si dispones del entorno Windows configurado con Visual Studio C++, Flutter, Rust
 
 Para evitar alertas de Windows Defender / SmartScreen y cumplir con las directivas de seguridad corporativas, **todos** los binarios internos (`.exe` y `.dll`) así como el ejecutable contenedor exterior deben estar firmados digitalmente.
 
-### Requisitos previos en la máquina de empaquetado:
-1. **Windows SDK**: Tener instalado `signtool.exe` (habitualmente en `C:\Program Files (x86)\Windows Kits\10\bin\...\x64\signtool.exe`).
-2. **Certificado de firma de código**:
-   * Instalado en el almacén de certificados de Windows (`Cert:\CurrentUser\My` o `Cert:\LocalMachine\My`), con el nombre o sujeto que contenga `Deputacion` (por defecto).
-   * O en archivo `.pfx` con contraseña.
-3. **Acceso a internet** para el sellado de tiempo (RFC 3161): `http://timestamp.digicert.com`.
+### ¿Qué archivo descargar de GitHub Actions?
+Cuando compilas en GitHub Actions, se publican varios artefactos. Para poder realizar la firma completa debes descargar el **archivo ZIP con la carpeta portable limpia**:
+* Para el cliente: **`rustdesk-true-portable-windows-CLI.zip`**
+* Para el soporte CAU: **`rustdesk-true-portable-windows-SOPO.zip`**
 
-### Cómo ejecutar la firma y empaquetado:
+> **¿Por qué NO descargar el `.exe` final directamente para firmar?**  
+> Porque el `.exe` exterior contiene dentro comprimidos `rustdesk.exe` y más de 12 librerías `.dll` (`librustdesk.dll`, `flutter_windows.dll`, etc.). Si sólo firmas el `.exe` exterior, cuando el usuario lo abra, los archivos internos extraídos no tendrán firma y los antivirus corporativos o políticas EDR los bloquearán. Debes firmar los internos primero y luego empaquetar.
 
-#### Método A: Doble clic interactivo (Recomendado)
-1. Coloca la carpeta compilada en `Release/SoporteDiputacion-CLI` o `Release/SoporteDiputacion-SOPO` (o en la ruta por defecto de Flutter `flutter/build/windows/x64/runner/Release`).
-2. Haz doble clic en **`firmar_y_empaquetar.bat`**.
-3. El script te preguntará en pantalla:
-   ```text
-   Selecciona el entorno a empaquetar:
-     [1] PRE - Preproduccion (por defecto)
-     [2] PRO - Produccion
+---
+
+### Opción A: Firmar y Empaquetar desde LINUX (Recomendado)
+
+En Linux se utiliza la herramienta estándar **`osslsigncode`** (ya instalada en el sistema) junto con el script automatizado **`firmar_y_empaquetar.sh`**.
+
+1. **Descomprimir la carpeta descargada de GitHub Actions:**
+   ```bash
+   # Ejemplo para el cliente:
+   unzip rustdesk-true-portable-windows-CLI.zip -d Release/SoporteDiputacion-CLI
    ```
-4. Pulsa `1` o `2` y presiona Enter.
 
-#### Método B: Por línea de comandos (PowerShell / CMD)
-```powershell
-# Empaquetar y firmar para PRE:
-.\firmar_y_empaquetar.ps1 -ReleaseDir "Release/SoporteDiputacion-CLI" -Env PRE
+2. **Ejecutar la firma y empaquetado:**
+   ```bash
+   # Para entorno PRE:
+   ./firmar_y_empaquetar.sh -d Release/SoporteDiputacion-CLI -e PRE -c /ruta/a/certificado_diputacion.pfx
 
-# Empaquetar y firmar para PRO:
-.\firmar_y_empaquetar.ps1 -ReleaseDir "Release/SoporteDiputacion-CLI" -Env PRO
+   # Para entorno PRO:
+   ./firmar_y_empaquetar.sh -d Release/SoporteDiputacion-CLI -e PRO -c /ruta/a/certificado_diputacion.pfx
+   ```
+   *(El script te solicitará la contraseña del certificado `.pfx` de forma segura)*.
 
-# Si se usa un archivo PFX externo:
-.\firmar_y_empaquetar.ps1 -ReleaseDir "Release/SoporteDiputacion-CLI" -Env PRO -CertFile "C:\certificados\firma_corporativa.pfx" -CertPassword "claveSecreta"
-```
+3. **Qué hace el script en Linux:**
+   * Inyecta la configuración de PRE o PRO (`config.toml`).
+   * Recorre la carpeta y firma con SHA-256 y timestamp RFC 3161 cada `.exe` y cada `.dll` interno usando `osslsigncode`.
+   * Invoca `package_official_portable.py` para compilar el empaquetador para Windows y comprimir todo en el binario final (`soporte-diputacion-pre.exe`, `soporte-diputacion.exe`, `soporte-diputacion-CAU-pre.exe` o `soporte-diputacion-CAU.exe`).
+   * Firma el ejecutable exterior final con `osslsigncode`.
+   * Verifica la validez de la firma criptográfica.
 
-### Qué hace este proceso internamente:
-1. **Configuración:** Genera el archivo `config.toml` con las URLs y claves correctas de PRE o PRO dentro de la carpeta de release.
-2. **Firma Paso 1:** Firma cada archivo individual (`rustdesk.exe` y todas las `.dll` de Flutter y plugins) con SHA-256 y sellado de tiempo.
-3. **Empaquetado Paso 2:** Invoca `package_official_portable.py` para comprimir la carpeta firmada en un único archivo ejecutable según el entorno y perfil (`soporte-diputacion-pre.exe`, `soporte-diputacion.exe`, `soporte-diputacion-CAU-pre.exe` o `soporte-diputacion-CAU.exe`).
-4. **Firma Paso 3:** Firma el ejecutable exterior final con el mismo certificado y timestamp.
+---
+
+### Opción B: Firmar y Empaquetar desde WINDOWS
+
+#### Requisitos previos en Windows:
+1. **Windows SDK**: Tener instalado `signtool.exe`.
+2. **Certificado**: Instalado en el almacén de certificados de Windows (`Cert:\CurrentUser\My`), con el nombre o sujeto que contenga `Deputacion`, o en archivo `.pfx`.
+
+#### Ejecución:
+* **Modo interactivo (Doble clic):**
+  1. Descomprime la carpeta en `Release/SoporteDiputacion-CLI` o `Release/SoporteDiputacion-SOPO`.
+  2. Haz doble clic en **`firmar_y_empaquetar.bat`**.
+  3. Elige `1` (PRE) o `2` (PRO).
+
+* **Por línea de comandos (PowerShell):**
+  ```powershell
+  # PRE:
+  .\firmar_y_empaquetar.ps1 -ReleaseDir "Release/SoporteDiputacion-CLI" -Env PRE
+
+  # PRO:
+  .\firmar_y_empaquetar.ps1 -ReleaseDir "Release/SoporteDiputacion-CLI" -Env PRO -CertFile "C:\certificados\firma.pfx" -CertPassword "clave"
+  ```
 
 ---
 
