@@ -110,13 +110,13 @@ foreach ($file in $filesToSign) {
 Write-Host "[+] Todos los binarios internos (.exe y .dll) han sido firmados correctamente." -ForegroundColor Green
 
 # 4. Determinar nombre del ejecutable final según la carpeta y el entorno
-$envUpper = $Env.ToUpper()
+$isPre = ($Env.ToUpper() -eq "PRE")
 $finalExe = if ($ReleaseDir -match "SOPO") {
-    "SoporteDiputacion-SOPO_${envUpper}_Portable.exe"
+    if ($isPre) { "soporte-diputacion-CAU-pre.exe" } else { "soporte-diputacion-CAU.exe" }
 } elseif ($ReleaseDir -match "CLI") {
-    "SoporteDiputacion-CLI_${envUpper}_Portable.exe"
+    if ($isPre) { "soporte-diputacion-pre.exe" } else { "soporte-diputacion.exe" }
 } else {
-    "Soporte_Deputacion_${envUpper}_Portable.exe"
+    if ($isPre) { "soporte-diputacion-pre.exe" } else { "soporte-diputacion.exe" }
 }
 
 # Generar el ejecutable único con el empaquetador oficial de RustDesk

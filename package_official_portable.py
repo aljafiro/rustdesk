@@ -17,7 +17,7 @@ POSSIBLE_RELEASE_DIRS = [
     os.path.join("target", "release"),
 ]
 
-FINAL_EXE_NAME = "Soporte_Deputacion_Portable.exe"
+FINAL_EXE_NAME = "soporte-diputacion.exe"
 
 def find_release_dir():
     for d in POSSIBLE_RELEASE_DIRS:

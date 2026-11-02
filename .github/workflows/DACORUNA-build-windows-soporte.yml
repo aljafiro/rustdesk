@@ -127,11 +127,12 @@ jobs:
         run: |
           $envName = "${{ inputs.environment }}"
           if (!$envName) { $envName = "PRE" }
-          $finalExe = "SoporteDiputacion-SOPO_${envName}_Portable.exe"
+          $finalExe = if ($envName -eq "PRE") { "soporte-diputacion-CAU-pre.exe" } else { "soporte-diputacion-CAU.exe" }
           python package_official_portable.py "flutter/build/windows/x64/runner/Release" $finalExe
+          echo "FINAL_EXE=$finalExe" >> $env:GITHUB_ENV
 
       - name: Subir ejecutable único portable oficial
         uses: actions/upload-artifact@v4
         with:
-          name: SoporteDiputacion-SOPO_${{ inputs.environment || 'PRE' }}_Portable_EXE
-          path: SoporteDiputacion-SOPO_${{ inputs.environment || 'PRE' }}_Portable.exe
+          name: ${{ env.FINAL_EXE }}
+          path: ${{ env.FINAL_EXE }}
