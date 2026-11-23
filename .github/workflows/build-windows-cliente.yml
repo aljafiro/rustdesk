@@ -1,10 +1,10 @@
-name: DACORUNA - Build RustDesk Portable Windows - SOPORTE
+name: [DACORUNA] Compilar Windows - Cliente
 
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Entorno de configuración (PRE o PRO)'
+        description: 'Entorno de destino (PRE o PRO)'
         required: true
         default: 'PRE'
         type: choice
@@ -14,15 +14,16 @@ on:
 
 jobs:
   build:
+    name: Compilar Cliente (${{ inputs.environment }})
     runs-on: windows-latest
 
     steps:
-      - name: Checkout al repositorio
+      - name: 1. Checkout del repositorio
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Reemplazar enlace simbólico por repositorio real
+      - name: 2. Sincronizar submódulo hbb_common
         shell: pwsh
         run: |
           if (Test-Path "libs/hbb_common") {
@@ -36,102 +37,88 @@ jobs:
             git clone --depth 1 "https://github.com/aljafiro/hbb_common.git" libs/hbb_common
           }
 
-      - name: Configurar entorno de Rust
+      - name: 3. Configurar entorno de Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
 
-      - name: Configurar Node.js
+      - name: 4. Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
-      - name: Configurar Python
+      - name: 5. Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Configurar Flutter
+      - name: 6. Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.4'
           cache: true
 
-      - name: Instalar Visual Studio 2019 Build Tools para compatibilidad con Flutter
+      - name: 7. Instalar Visual Studio 2019 Build Tools
         shell: pwsh
         run: |
           choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet" --no-progress
 
-      - name: Configurar Vcpkg e instalar dependencias
+      - name: 8. Configurar Vcpkg y dependencias C++
         shell: pwsh
         run: |
           vcpkg integrate install
           vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static opus:x64-windows-static aom:x64-windows-static --classic
-          
-          $vcpkgDir = "C:/vcpkg"
-          if ($env:VCPKGROOT) { $vcpkgDir = $env:VCPKGROOT }
+          $vcpkgDir = if ($env:VCPKGROOT) { $env:VCPKGROOT } else { "C:/vcpkg" }
           echo "VCPKG_ROOT=$vcpkgDir" >> $env:GITHUB_ENV
 
-      - name: Instalar dependencias de Flutter
+      - name: 9. Instalar dependencias de Flutter
         working-directory: flutter
         shell: pwsh
-        run: |
-          flutter pub get
+        run: flutter pub get
 
-      - name: Generar puentes FFI (Flutter Bridge)
+      - name: 10. Generar puentes FFI (Flutter Rust Bridge)
         shell: pwsh
         run: |
           cargo install flutter_rust_bridge_codegen --version 1.80.1 --features "uuid" --locked
           flutter_rust_bridge_codegen --rust-input .\src\flutter_ffi.rs --dart-output .\flutter\lib\generated_bridge.dart --c-output .\src\bridge_generated.h
 
-      - name: Inyectar configuración del entorno en el código fuente de Rust
+      - name: 11. Inyectar configuración del entorno (${{ inputs.environment }})
         shell: pwsh
         run: |
           $envName = "${{ inputs.environment }}"
           if (!$envName) { $envName = "PRE" }
           python configure_env.py apply $envName
 
-      - name: Compilar versión Portable limpia
+      - name: 12. Compilar binarios (Modo Cliente: sólo entrante)
         shell: pwsh
         run: |
-          python build.py --portable --flutter
+          python build.py --portable --flutter --incoming-only
 
-      - name: Subir artefacto compilado
-        uses: actions/upload-artifact@v4
-        with:
-          name: rustdesk-portable-windows
-          path: |
-            target/release/*.exe
-            flutter/build/windows/runner/Release/*.exe
-            *.exe
-
-      - name: Crear configuración portable por defecto
+      - name: 13. Generar configuración portable por defecto
         shell: pwsh
         run: |
           $releaseDir = "flutter/build/windows/x64/runner/Release"
-          if (!(Test-Path $releaseDir)) {
-            $releaseDir = "target/release"
-          }
+          if (!(Test-Path $releaseDir)) { $releaseDir = "target/release" }
           $envName = "${{ inputs.environment }}"
           if (!$envName) { $envName = "PRE" }
-          python configure_env.py generate-toml $envName --output "$releaseDir"
+          python configure_env.py generate-toml $envName --output "$releaseDir" --incoming-only
 
-      - name: Subir carpeta portable limpia como artefacto
+      - name: 14. Subir carpeta portable para firma (Recomendado)
         uses: actions/upload-artifact@v4
         with:
-          name: rustdesk-true-portable-windows-SOPO
+          name: rustdesk-true-portable-windows-CLI
           path: flutter/build/windows/x64/runner/Release/
 
-      - name: Empaquetar ejecutable único portable oficial de RustDesk
+      - name: 15. Empaquetar ejecutable contenedor único
         shell: pwsh
         run: |
           $envName = "${{ inputs.environment }}"
           if (!$envName) { $envName = "PRE" }
-          $finalExe = if ($envName -eq "PRE") { "soporte-diputacion-CAU-pre.exe" } else { "soporte-diputacion-CAU.exe" }
+          $finalExe = if ($envName -eq "PRE") { "soporte-diputacion-pre.exe" } else { "soporte-diputacion.exe" }
           python package_official_portable.py "flutter/build/windows/x64/runner/Release" $finalExe
           echo "FINAL_EXE=$finalExe" >> $env:GITHUB_ENV
 
-      - name: Subir ejecutable único portable oficial
+      - name: 16. Subir ejecutable contenedor sin firmar
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.FINAL_EXE }}

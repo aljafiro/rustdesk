@@ -37,8 +37,8 @@ La compilación se realiza de forma automatizada en runners Windows de GitHub Ac
 
 1. Accede a la pestaña **Actions** en el repositorio GitHub (`aljafiro/rustdesk`).
 2. Selecciona el workflow deseado:
-   * **`DACORUNA - Build RustDesk Portable Windows - CLI`**: Para el cliente de usuario final.
-   * **`DACORUNA - Build RustDesk Portable Windows - SOPORTE`**: Para el cliente de técnicos del CAU.
+   * **`[DACORUNA] Compilar Windows - Cliente`**: Para el cliente de usuario final (`build-windows-cliente.yml`).
+   * **`[DACORUNA] Compilar Windows - Soporte CAU`**: Para el cliente de técnicos del CAU (`build-windows-soporte.yml`).
 3. Pulsa en **Run workflow**.
 4. Selecciona el entorno deseado:
    * **`PRE`**: Apunta a servidores de preproducción (`soporteremoto-diputacion-pre.dacoruna.gal`).
