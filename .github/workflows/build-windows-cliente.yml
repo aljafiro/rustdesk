@@ -1,30 +1,30 @@
-name: [DACORUNA] Compilar Windows - Cliente
+name: "DACORUNA - Compilar Windows - Cliente"
 run-name: "Cliente [${{ inputs.environment }}] - #${{ github.run_number }}"
 
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Entorno de destino (PRE o PRO)'
+        description: "Entorno de destino (PRE o PRO)"
         required: true
-        default: 'PRE'
+        default: "PRE"
         type: choice
         options:
-          - PRE
-          - PRO
+          - "PRE"
+          - "PRO"
 
 jobs:
   build:
-    name: Compilar Cliente (${{ inputs.environment }})
+    name: "Compilar Cliente (${{ inputs.environment }})"
     runs-on: windows-latest
 
     steps:
-      - name: 1. Checkout del repositorio
+      - name: "1. Checkout del repositorio"
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: 2. Sincronizar submódulo hbb_common
+      - name: "2. Sincronizar submódulo hbb_common"
         shell: pwsh
         run: |
           if (Test-Path "libs/hbb_common") {
@@ -38,33 +38,33 @@ jobs:
             git clone --depth 1 "https://github.com/aljafiro/hbb_common.git" libs/hbb_common
           }
 
-      - name: 3. Configurar entorno de Rust
+      - name: "3. Configurar entorno de Rust"
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
 
-      - name: 4. Configurar Node.js
+      - name: "4. Configurar Node.js"
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
 
-      - name: 5. Configurar Python
+      - name: "5. Configurar Python"
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
-      - name: 6. Configurar Flutter
+      - name: "6. Configurar Flutter"
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.4'
+          flutter-version: "3.24.4"
           cache: true
 
-      - name: 7. Instalar Visual Studio 2019 Build Tools
+      - name: "7. Instalar Visual Studio 2019 Build Tools"
         shell: pwsh
         run: |
           choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet" --no-progress
 
-      - name: 8. Configurar Vcpkg y dependencias C++
+      - name: "8. Configurar Vcpkg y dependencias C++"
         shell: pwsh
         run: |
           vcpkg integrate install
@@ -72,30 +72,30 @@ jobs:
           $vcpkgDir = if ($env:VCPKGROOT) { $env:VCPKGROOT } else { "C:/vcpkg" }
           echo "VCPKG_ROOT=$vcpkgDir" >> $env:GITHUB_ENV
 
-      - name: 9. Instalar dependencias de Flutter
+      - name: "9. Instalar dependencias de Flutter"
         working-directory: flutter
         shell: pwsh
         run: flutter pub get
 
-      - name: 10. Generar puentes FFI (Flutter Rust Bridge)
+      - name: "10. Generar puentes FFI (Flutter Rust Bridge)"
         shell: pwsh
         run: |
           cargo install flutter_rust_bridge_codegen --version 1.80.1 --features "uuid" --locked
           flutter_rust_bridge_codegen --rust-input .\src\flutter_ffi.rs --dart-output .\flutter\lib\generated_bridge.dart --c-output .\src\bridge_generated.h
 
-      - name: 11. Inyectar configuración del entorno (${{ inputs.environment }})
+      - name: "11. Inyectar configuración del entorno"
         shell: pwsh
         run: |
           $envName = "${{ inputs.environment }}"
           if (!$envName) { $envName = "PRE" }
           python configure_env.py apply $envName
 
-      - name: 12. Compilar binarios (Modo Cliente: sólo entrante)
+      - name: "12. Compilar binarios (Modo Cliente - sólo entrante)"
         shell: pwsh
         run: |
           python build.py --portable --flutter --incoming-only
 
-      - name: 13. Generar configuración portable por defecto
+      - name: "13. Generar configuración portable por defecto"
         shell: pwsh
         run: |
           $releaseDir = "flutter/build/windows/x64/runner/Release"
@@ -104,13 +104,13 @@ jobs:
           if (!$envName) { $envName = "PRE" }
           python configure_env.py generate-toml $envName --output "$releaseDir" --incoming-only
 
-      - name: 14. Subir carpeta portable para firma (Recomendado)
+      - name: "14. Subir carpeta portable para firma (Recomendado)"
         uses: actions/upload-artifact@v4
         with:
-          name: rustdesk-true-portable-windows-CLI-${{ inputs.environment }}
-          path: flutter/build/windows/x64/runner/Release/
+          name: "rustdesk-true-portable-windows-CLI-${{ inputs.environment }}"
+          path: "flutter/build/windows/x64/runner/Release/"
 
-      - name: 15. Empaquetar ejecutable contenedor único
+      - name: "15. Empaquetar ejecutable contenedor único"
         shell: pwsh
         run: |
           $envName = "${{ inputs.environment }}"
@@ -119,8 +119,8 @@ jobs:
           python package_official_portable.py "flutter/build/windows/x64/runner/Release" $finalExe
           echo "FINAL_EXE=$finalExe" >> $env:GITHUB_ENV
 
-      - name: 16. Subir ejecutable contenedor sin firmar
+      - name: "16. Subir ejecutable contenedor sin firmar"
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.FINAL_EXE }}
-          path: ${{ env.FINAL_EXE }}
+          name: "${{ env.FINAL_EXE }}"
+          path: "${{ env.FINAL_EXE }}"
