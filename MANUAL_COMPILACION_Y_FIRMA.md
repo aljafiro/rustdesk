@@ -1,58 +1,13 @@
-# Manual de Configuración, Compilación, Empaquetado y Firma
+# Manual de Compilación, Empaquetado y Firma Digital
 ## Cliente RustDesk - Deputación da Coruña
 
-Este documento describe en detalle el ciclo completo para configurar los entornos (PRE y PRO), compilar los binarios, empaquetar la versión portable y firmar digitalmente los ejecutables.
+Este documento describe el flujo completo para la generación, empaquetado y firma digital de los ejecutables portables de RustDesk adaptados para la **Deputación da Coruña**.
 
 ---
 
-## 1. Estructura de Entornos y Configuración
+## 1. Nomenclatura y Tipos de Ejecutables
 
-Los parámetros de conexión (servidor *rendezvous*, clave pública del servidor, servidor API/CAU y relay forzado) se gestionan de forma centralizada en la carpeta `config/`:
-
-* **`config/pre.json`**: Configuración para el entorno de **Preproducción**.
-* **`config/pro.json`**: Configuración para el entorno de **Producción**.
-
-### Formato de archivo (`config/pro.json` o `config/pre.json`):
-```json
-{
-  "environment": "PRO",
-  "rendezvous_server": "soporteremoto-diputacion.dacoruna.gal",
-  "rendezvous_port": 21116,
-  "api_server": "https://soporteremoto-diputacion-cau.dacoruna.gal",
-  "key": "<CLAVE_PUBLICA_PRO_AQUI>",
-  "forced_relay": "Y"
-}
-```
-
-### Herramienta automatizadora: `configure_env.py`
-Permite aplicar los valores al código fuente antes de compilar o generar los ficheros de configuración portables:
-
-* **Consultar configuración actual:**
-  ```bash
-  python configure_env.py info pre
-  python configure_env.py info pro
-  ```
-
-* **Inyectar configuración en el código Rust (`config.rs` y `common.rs`):**
-  ```bash
-  python configure_env.py apply pre
-  python configure_env.py apply pro
-  ```
-
-* **Generar `config.toml` para empaquetado:**
-  ```bash
-  # Para cliente final (sólo entrante):
-  python configure_env.py generate-toml pre -o "flutter/build/windows/x64/runner/Release" --incoming-only
-
-  # Para soporte técnico (bidireccional):
-  python configure_env.py generate-toml pro -o "flutter/build/windows/x64/runner/Release"
-  ```
-
----
-
-## 2. Tipos de Clientes y Nomenclatura de Ejecutables
-
-En el repositorio se construyen dos variantes del ejecutable según el destinatario y el entorno:
+Se generan dos tipos de ejecutables según el destinatario y el entorno objetivo:
 
 | Tipo | Destinatario | Modo | Nombre en Producción (PRO) | Nombre en Preproducción (PRE) |
 | :--- | :--- | :--- | :--- | :--- |
@@ -61,128 +16,145 @@ En el repositorio se construyen dos variantes del ejecutable según el destinata
 
 ---
 
-## 3. Compilación Automática (Recomendado: GitHub Actions)
+## 2. ¿Por qué es necesario firmar "por dentro y por fuera"?
 
-La forma más rápida, reproducible y limpia de compilar es a través de los flujos de CI/CD en GitHub:
+Los ejecutables finales (`soporte-diputacion.exe`, `soporte-diputacion-CAU.exe`) son **contenedores portables autoextraíbles** (SFX) generados por el empaquetador oficial de RustDesk:
 
-1. Ve a la pestaña **Actions** del repositorio en GitHub.
-2. En el menú lateral izquierdo, selecciona el workflow correspondiente:
-   * **`DACORUNA - Build RustDesk Portable Windows - CLI`**: Para el ejecutable del usuario final.
-   * **`DACORUNA - Build RustDesk Portable Windows - SOPORTE`**: Para el ejecutable del CAU / técnicos.
-3. Haz clic en **Run workflow**.
-4. En el desplegable **"Entorno de configuración (PRE o PRO)"**, elige:
-   * `PRE` para preproducción.
-   * `PRO` para producción.
-5. Haz clic en el botón verde **Run workflow**.
-6. Al finalizar el job (~15-25 min), descarga el artefacto generado en la sección de descargas del flujo:
-   * **Cliente PRE:** `soporte-diputacion-pre.exe`
-   * **Cliente PRO:** `soporte-diputacion.exe`
-   * **Soporte CAU PRE:** `soporte-diputacion-CAU-pre.exe`
-   * **Soporte CAU PRO:** `soporte-diputacion-CAU.exe`
+1. **Firma interna ("por dentro"):**
+   * El paquete contiene comprimidos el ejecutable principal `rustdesk.exe` y más de 12 librerías dinámicas (`librustdesk.dll`, `flutter_windows.dll`, decodificadores de video, pantalla virtual, etc.).
+   * Al ejecutarse en el equipo del usuario, estos ficheros se descomprimen en el directorio temporal (`%TEMP%`).
+   * Si únicamente se firma el archivo `.exe` exterior, los archivos extraídos no tendrán firma digital. Las políticas de seguridad corporativas, Windows Defender SmartScreen y las soluciones EDR/antivirus bloquearán la ejecución de estas librerías sin firmar.
+   * **Solución:** Se deben firmar individualmente `rustdesk.exe` y todos los `.dll` antes de empaquetar.
+
+2. **Firma exterior ("por fuera"):**
+   * El archivo `.exe` contenedor resultante debe firmarse para que el sistema operativo Windows y el navegador web confíen en el ejecutable durante la descarga y primer inicio.
 
 ---
 
-## 4. Compilación Local en Windows (Manual)
+## 3. Fase 1: Compilación en GitHub Actions
 
-Si dispones del entorno Windows configurado con Visual Studio C++, Flutter, Rust y Vcpkg:
+La compilación se realiza de forma automatizada en runners Windows de GitHub Actions:
 
-1. **Aplicar el entorno deseado:**
-   ```powershell
-   python configure_env.py apply PRE   # o PRO
-   ```
+1. Accede a la pestaña **Actions** en el repositorio GitHub (`aljafiro/rustdesk`).
+2. Selecciona el workflow deseado:
+   * **`DACORUNA - Build RustDesk Portable Windows - CLI`**: Para el cliente de usuario final.
+   * **`DACORUNA - Build RustDesk Portable Windows - SOPORTE`**: Para el cliente de técnicos del CAU.
+3. Pulsa en **Run workflow**.
+4. Selecciona el entorno deseado:
+   * **`PRE`**: Apunta a servidores de preproducción (`soporteremoto-diputacion-pre.dacoruna.gal`).
+   * **`PRO`**: Apunta a servidores de producción (`soporteremoto-diputacion.dacoruna.gal`).
+5. Pulsa el botón verde **Run workflow** y espera a que termine el trabajo (~15 min).
 
-2. **Compilar versión CLI (Usuario final):**
-   ```powershell
-   python build.py --portable --flutter --incoming-only
-   ```
-   *O versión SOPORTE (Técnico):*
-   ```powershell
-   python build.py --portable --flutter
-   ```
-
-3. Los archivos compilados quedarán en:
-   `flutter/build/windows/x64/runner/Release/`
+### Artefacto a Descargar (¡IMPORTANTE!)
+Para poder realizar la firma completa (interna + externa), **NO** descargues el `.exe` suelto. Debes descargar el **archivo ZIP con la carpeta portable completa**:
+* Para cliente: **`rustdesk-true-portable-windows-CLI.zip`**
+* Para soporte CAU: **`rustdesk-true-portable-windows-SOPO.zip`**
 
 ---
 
-## 5. Proceso de Firma Digital y Empaquetado
+## 4. Fase 2: Firma y Empaquetado
 
-Para evitar alertas de Windows Defender / SmartScreen y cumplir con las directivas de seguridad corporativas, **todos** los binarios internos (`.exe` y `.dll`) así como el ejecutable contenedor exterior deben estar firmados digitalmente.
+### Opción A: Desde LINUX con `osslsigncode` (Método Recomendado)
 
-### ¿Qué archivo descargar de GitHub Actions?
-Cuando compilas en GitHub Actions, se publican varios artefactos. Para poder realizar la firma completa debes descargar el **archivo ZIP con la carpeta portable limpia**:
-* Para el cliente: **`rustdesk-true-portable-windows-CLI.zip`**
-* Para el soporte CAU: **`rustdesk-true-portable-windows-SOPO.zip`**
+Nuestro entorno Linux dispone de la herramienta **`osslsigncode`** y del certificado corporativo en `/home/sdkuser/Sign/Camerfirma-CodeSign-2024.p12`.
 
-> **¿Por qué NO descargar el `.exe` final directamente para firmar?**  
-> Porque el `.exe` exterior contiene dentro comprimidos `rustdesk.exe` y más de 12 librerías `.dll` (`librustdesk.dll`, `flutter_windows.dll`, etc.). Si sólo firmas el `.exe` exterior, cuando el usuario lo abra, los archivos internos extraídos no tendrán firma y los antivirus corporativos o políticas EDR los bloquearán. Debes firmar los internos primero y luego empaquetar.
+#### Paso 1: Descomprimir el artefacto en `Release/`
+```bash
+cd /home/sdkuser/git/aljafiro/rustdesk
+
+# Si vas a firmar el Cliente:
+unzip rustdesk-true-portable-windows-CLI.zip -d Release/SoporteDiputacion-CLI
+
+# Si vas a firmar el Soporte CAU:
+unzip rustdesk-true-portable-windows-SOPO.zip -d Release/SoporteDiputacion-SOPO
+```
+
+#### Paso 2: Ejecutar el script automatizado `firmar_y_empaquetar.sh`
+```bash
+# Para cliente en PRE:
+./firmar_y_empaquetar.sh \
+  -d Release/SoporteDiputacion-CLI \
+  -e PRE \
+  -c /home/sdkuser/Sign/Camerfirma-CodeSign-2024.p12
+
+# Para cliente en PRO:
+./firmar_y_empaquetar.sh \
+  -d Release/SoporteDiputacion-CLI \
+  -e PRO \
+  -c /home/sdkuser/Sign/Camerfirma-CodeSign-2024.p12
+
+# Para soporte CAU en PRE:
+./firmar_y_empaquetar.sh \
+  -d Release/SoporteDiputacion-SOPO \
+  -e PRE \
+  -c /home/sdkuser/Sign/Camerfirma-CodeSign-2024.p12
+
+# Para soporte CAU en PRO:
+./firmar_y_empaquetar.sh \
+  -d Release/SoporteDiputacion-SOPO \
+  -e PRO \
+  -c /home/sdkuser/Sign/Camerfirma-CodeSign-2024.p12
+```
+> El script solicitará la contraseña del certificado `.p12` de forma segura por terminal.
+
+#### ¿Qué realiza el script automáticamente?
+1. **Inyección de configuración:** Genera `config.toml` adaptado al entorno (servidores rendezvous, relay y API sin `/api`).
+2. **Firma interna:** Recorre la carpeta y firma con SHA-256 y sellado de tiempo RFC 3161 cada `.exe` y `.dll`.
+3. **Empaquetado:** Invoca `package_official_portable.py` para construir el ejecutable portable final.
+4. **Firma exterior:** Firma el contenedor ejecutable final con `osslsigncode`.
+5. **Verificación:** Valida criptográficamente el resultado con `osslsigncode verify`.
 
 ---
 
-### Opción A: Firmar y Empaquetar desde LINUX (Recomendado)
+### Opción B: Desde una máquina WINDOWS con `signtool.exe`
 
-En Linux se utiliza la herramienta estándar **`osslsigncode`** (ya instalada en el sistema) junto con el script automatizado **`firmar_y_empaquetar.sh`**.
+Si prefieres realizar la firma en un puesto de trabajo Windows:
 
-1. **Descomprimir la carpeta descargada de GitHub Actions:**
-   ```bash
-   # Ejemplo para el cliente:
-   unzip rustdesk-true-portable-windows-CLI.zip -d Release/SoporteDiputacion-CLI
-   ```
-
-2. **Ejecutar la firma y empaquetado:**
-   ```bash
-   # Para entorno PRE:
-   ./firmar_y_empaquetar.sh -d Release/SoporteDiputacion-CLI -e PRE -c /ruta/a/certificado_diputacion.pfx
-
-   # Para entorno PRO:
-   ./firmar_y_empaquetar.sh -d Release/SoporteDiputacion-CLI -e PRO -c /ruta/a/certificado_diputacion.pfx
-   ```
-   *(El script te solicitará la contraseña del certificado `.pfx` de forma segura)*.
-
-3. **Qué hace el script en Linux:**
-   * Inyecta la configuración de PRE o PRO (`config.toml`).
-   * Recorre la carpeta y firma con SHA-256 y timestamp RFC 3161 cada `.exe` y cada `.dll` interno usando `osslsigncode`.
-   * Invoca `package_official_portable.py` para compilar el empaquetador para Windows y comprimir todo en el binario final (`soporte-diputacion-pre.exe`, `soporte-diputacion.exe`, `soporte-diputacion-CAU-pre.exe` o `soporte-diputacion-CAU.exe`).
-   * Firma el ejecutable exterior final con `osslsigncode`.
-   * Verifica la validez de la firma criptográfica.
-
----
-
-### Opción B: Firmar y Empaquetar desde WINDOWS
-
-#### Requisitos previos en Windows:
-1. **Windows SDK**: Tener instalado `signtool.exe`.
-2. **Certificado**: Instalado en el almacén de certificados de Windows (`Cert:\CurrentUser\My`), con el nombre o sujeto que contenga `Deputacion`, o en archivo `.pfx`.
+#### Requisitos:
+1. Tener instalado el **Windows SDK** (incluye `signtool.exe`).
+2. Disponer del certificado digital instalado en el almacén personal de Windows (`Cert:\CurrentUser\My`) o en un archivo `.pfx` / `.p12`.
 
 #### Ejecución:
-* **Modo interactivo (Doble clic):**
-  1. Descomprime la carpeta en `Release/SoporteDiputacion-CLI` o `Release/SoporteDiputacion-SOPO`.
-  2. Haz doble clic en **`firmar_y_empaquetar.bat`**.
-  3. Elige `1` (PRE) o `2` (PRO).
+1. Copia la carpeta descomprimida (`Release/SoporteDiputacion-CLI` o `Release/SoporteDiputacion-SOPO`) al equipo Windows.
+2. **Método gráfico interactivo:**
+   * Haz doble clic en **`firmar_y_empaquetar.bat`**.
+   * Elige la opción del entorno (`1` para PRE o `2` para PRO).
+3. **Método por PowerShell:**
+   ```powershell
+   # Firma usando el almacén de Windows:
+   .\firmar_y_empaquetar.ps1 -ReleaseDir "Release/SoporteDiputacion-CLI" -Env PRE
 
-* **Por línea de comandos (PowerShell):**
-  ```powershell
-  # PRE:
-  .\firmar_y_empaquetar.ps1 -ReleaseDir "Release/SoporteDiputacion-CLI" -Env PRE
-
-  # PRO:
-  .\firmar_y_empaquetar.ps1 -ReleaseDir "Release/SoporteDiputacion-CLI" -Env PRO -CertFile "C:\certificados\firma.pfx" -CertPassword "clave"
-  ```
+   # O especificando archivo PFX y contraseña:
+   .\firmar_y_empaquetar.ps1 -ReleaseDir "Release/SoporteDiputacion-CLI" -Env PRO -CertFile "C:\certificados\firma.pfx" -CertPassword "clave"
+   ```
 
 ---
 
-## 6. Actualización del Icono Corporativo
+## 5. Parámetros de Red y Servidores
 
-Si en el futuro se necesita renovar la imagen o logotipo institucional:
+Las configuraciones base de conexión se encuentran centralizadas en `config/`:
+* **`config/pre.json`**:
+  ```json
+  {
+    "environment": "PRE",
+    "rendezvous_server": "soporteremoto-diputacion-pre.dacoruna.gal",
+    "rendezvous_port": 21116,
+    "api_server": "https://soporteremoto-diputacion-cau-pre.dacoruna.gal",
+    "key": "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk=",
+    "forced_relay": "Y"
+  }
+  ```
+* **`config/pro.json`**:
+  ```json
+  {
+    "environment": "PRO",
+    "rendezvous_server": "soporteremoto-diputacion-pre.dacoruna.gal",
+    "rendezvous_port": 21116,
+    "api_server": "https://soporteremoto-diputacion-cau-pre.dacoruna.gal",
+    "key": "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk=",
+    "forced_relay": "Y"
+  }
+  ```
 
-1. Sustituye el archivo vectorial en:
-   `res/corporate_icon.svg`
-2. Ejecuta el script de regeneración de iconos:
-   ```bash
-   python res/update_branding_icons.py
-   ```
-3. El script reconstruirá automáticamente:
-   * El ejecutable binario `.ico` para Windows (`res/icon.ico` y `flutter/windows/runner/resources/app_icon.ico`) en todos los tamaños (16, 32, 48, 64, 128, 256 px).
-   * El icono de la bandeja del sistema (`res/tray-icon.ico`).
-   * Los vectores SVG de la interfaz Flutter (`flutter/assets/icon.svg`).
-   * Los iconos maestros PNG (`res/icon.png` 512x512 y resoluciones estándar).
+> **Nota técnica sobre `api_server`:**  
+> La URL del servidor API debe definirse **siempre sin el sufijo `/api`** (`https://...dacoruna.gal`). El cliente RustDesk concatena internamente `/api/...` a todos los endpoints de autenticación y sincronización (ej: `{api_server}/api/oidc/auth`).
