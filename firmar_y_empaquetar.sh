@@ -12,6 +12,7 @@ cd "$SCRIPT_DIR"
 # Valores por defecto
 RELEASE_DIR=""
 ENV="PRE"
+ENV_SPECIFIED=false
 CERT_FILE=""
 CERT_PASS=""
 TIMESTAMP_URL="http://timestamp.digicert.com"
@@ -44,6 +45,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         -e|--env)
             ENV="$(echo "$2" | tr '[:lower:]' '[:upper:]')"
+            ENV_SPECIFIED=true
             shift 2
             ;;
         -c|--cert)
@@ -88,6 +90,10 @@ fi
 # 2. Localizar directorio de release si no se ha especificado
 if [ -z "$RELEASE_DIR" ]; then
     POSSIBLE_DIRS=(
+        "Release/SoporteDiputacion-CLI-PRE"
+        "Release/SoporteDiputacion-CLI-PRO"
+        "Release/SoporteDiputacion-SOPO-PRE"
+        "Release/SoporteDiputacion-SOPO-PRO"
         "Release/SoporteDiputacion-CLI"
         "Release/SoporteDiputacion-SOPO"
         "flutter/build/windows/x64/runner/Release"
@@ -110,8 +116,17 @@ if [ -z "$RELEASE_DIR" ] || [ ! -d "$RELEASE_DIR" ]; then
     fi
 fi
 
+# Autodetectar entorno si no se especificó explícitamente por CLI
+if [ "$ENV_SPECIFIED" = false ]; then
+    if [[ "$RELEASE_DIR" =~ "PRO" ]]; then
+        ENV="PRO"
+    elif [[ "$RELEASE_DIR" =~ "PRE" ]]; then
+        ENV="PRE"
+    fi
+fi
+
 echo "[*] Carpeta de origen: $RELEASE_DIR"
-echo "[*] Entorno objetivo:   $ENV"
+echo "[*] Entorno objetivo:  $ENV"
 
 # 3. Localizar certificado PFX
 if [ -z "$CERT_FILE" ]; then
