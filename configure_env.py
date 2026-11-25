@@ -154,7 +154,9 @@ def generate_toml(cfg: dict, output_dir: str, incoming_only: bool = False):
     lines = [
         "[options]",
         f'rendezvous_server = "{server}:{port}"',
+        f'custom-rendezvous-server = "{server}:{port}"',
         f'api_server = "{api_server}"',
+        f'api-server = "{api_server}"',
         f'key = "{key}"',
         f'forced_relay = "{forced_relay}"',
     ]
