@@ -3796,23 +3796,23 @@ class _Logo extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Image.network(
-        'https://www.dacoruna.gal/themes/nuevo-diseno/images/deputacion.png',
+      child: SvgPicture.asset(
+        'assets/logo-dipu.svg',
         fit: BoxFit.contain,
-        errorBuilder: (ctx, error, stackTrace) {
-          return FutureBuilder<String?>(
-            future: _resolveLogoAsset(Theme.of(context).brightness),
-            builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
-              final asset = snapshot.data;
-              if (asset != null) {
-                return Image.asset(
-                  asset,
-                  fit: BoxFit.contain,
-                );
-              }
-              return SvgPicture.asset(
-                'assets/icon.svg',
+        placeholderBuilder: (BuildContext context) {
+          return Image.asset(
+            'assets/logo.png',
+            fit: BoxFit.contain,
+            errorBuilder: (ctx, error, stackTrace) {
+              return Image.network(
+                'https://www.dacoruna.gal/themes/nuevo-diseno/images/deputacion_negative.png',
                 fit: BoxFit.contain,
+                errorBuilder: (ctx2, error2, stackTrace2) {
+                  return SvgPicture.asset(
+                    'assets/icon.svg',
+                    fit: BoxFit.contain,
+                  );
+                },
               );
             },
           );
