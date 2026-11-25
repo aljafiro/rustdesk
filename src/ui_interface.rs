@@ -138,9 +138,9 @@ pub fn show_run_without_install() -> bool {
 
 #[inline]
 pub fn get_license() -> String {
-    let key = "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk=";
-    let host = "soporteremoto-diputacion-pre.dacoruna.gal";
-    let api = "https://soporteremoto-diputacion-cau-pre.dacoruna.gal";
+    let key = "P8MeDSpjAleEwPP45YV3oF3ZdTrUH54+aFQzZj/b2wc=";
+    let host = "soporteremoto-diputacion.dacoruna.gal";
+    let api = "https://soporteremoto-diputacion-cau.dacoruna.gal";
     #[cfg(feature = "flutter")]
     return format!("Key: {}\nHost: {}\nAPI: {}", key, host, api);
     // default license format is html formed (sciter)

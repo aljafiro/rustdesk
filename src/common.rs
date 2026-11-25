@@ -743,7 +743,7 @@ async fn test_nat_type_() -> ResultType<bool> {
     Ok(ok)
 }
 
-pub const DEFAULT_API_SERVER: &str = "https://soporteremoto-diputacion-cau-pre.dacoruna.gal";
+pub const DEFAULT_API_SERVER: &str = "https://soporteremoto-diputacion-cau.dacoruna.gal";
 
 pub async fn get_rendezvous_server(_ms_timeout: u64) -> (String, Vec<String>, bool) {
     let mut custom = Config::get_option("custom-rendezvous-server");
@@ -1118,6 +1118,13 @@ fn get_api_server_(api: String, custom: String) -> String {
     if !opt_api.is_empty() {
         return opt_api;
     }
+    let default_api = Config::get_option("api_server");
+    if !default_api.is_empty() {
+        return default_api;
+    }
+    if !DEFAULT_API_SERVER.is_empty() {
+        return DEFAULT_API_SERVER.to_owned();
+    }
     let default_server = config::RENDEZVOUS_SERVERS
         .first()
         .copied()
@@ -1131,11 +1138,7 @@ fn get_api_server_(api: String, custom: String) -> String {
             return format!("http://{}", s);
         }
     }
-    let default_api = Config::get_option("api_server");
-    if !default_api.is_empty() {
-        return default_api;
-    }
-    DEFAULT_API_SERVER.to_owned()
+    "".to_owned()
 }
 
 #[inline]

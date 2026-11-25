@@ -2500,7 +2500,10 @@ pub fn is_disable_installation() -> SyncReturn<bool> {
 }
 
 pub fn main_is_soporte_build() -> SyncReturn<bool> {
-    SyncReturn(hbb_common::config::RENDEZVOUS_SERVERS.contains(&"soporteremoto-diputacion-pre.dacoruna.gal"))
+    SyncReturn(
+        hbb_common::config::RENDEZVOUS_SERVERS.contains(&"soporteremoto-diputacion-pre.dacoruna.gal")
+            || hbb_common::config::RENDEZVOUS_SERVERS.contains(&"soporteremoto-diputacion.dacoruna.gal")
+    )
 }
 
 pub fn is_preset_password() -> bool {

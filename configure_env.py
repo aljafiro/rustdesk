@@ -110,6 +110,35 @@ def apply_to_source(cfg: dict):
         else:
             print(f"[-] Sin cambios necesarios en: {common_rs_path}")
 
+    # 3. src/ui_interface.rs
+    ui_interface_path = os.path.join(SCRIPT_DIR, "src", "ui_interface.rs")
+    if os.path.exists(ui_interface_path):
+        with open(ui_interface_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        new_content = re.sub(
+            r'let key = ".*?";',
+            f'let key = "{key}";',
+            content,
+        )
+        new_content = re.sub(
+            r'let host = ".*?";',
+            f'let host = "{server}";',
+            new_content,
+        )
+        new_content = re.sub(
+            r'let api = ".*?";',
+            f'let api = "{api_server}";',
+            new_content,
+        )
+
+        if new_content != content:
+            with open(ui_interface_path, "w", encoding="utf-8") as f:
+                f.write(new_content)
+            print(f"[+] Actualizado correctamente: {ui_interface_path}")
+        else:
+            print(f"[-] Sin cambios necesarios en: {ui_interface_path}")
+
 
 def generate_toml(cfg: dict, output_dir: str, incoming_only: bool = False):
     server = cfg.get("rendezvous_server", "").strip()
