@@ -1,9 +1,9 @@
 {
   "environment": "PRO",
-  "rendezvous_server": "soporteremoto-diputacion-pre.dacoruna.gal",
+  "rendezvous_server": "soporteremoto-diputacion.dacoruna.gal",
   "rendezvous_port": 21116,
-  "api_server": "https://soporteremoto-diputacion-cau-pre.dacoruna.gal",
-  "key": "mOmm0h89VKDmiGXdlpu/890jmPH4VYYvbbZTIovjSTk=",
+  "api_server": "https://soporteremoto-diputacion-cau.dacoruna.gal",
+  "key": "P8MeDSpjAleEwPP45YV3oF3ZdTrUH54+aFQzZj/b2wc=",
   "forced_relay": "Y",
-  "_comment": "Modificar estos valores cuando los datos definitivos del servidor y clave de PRO estén disponibles."
+  "allow_websocket": "Y"
 }

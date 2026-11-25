@@ -129,6 +129,9 @@ def generate_toml(cfg: dict, output_dir: str, incoming_only: bool = False):
         f'key = "{key}"',
         f'forced_relay = "{forced_relay}"',
     ]
+    allow_ws = cfg.get("allow_websocket") or cfg.get("allow-websocket")
+    if allow_ws:
+        lines.append(f'allow-websocket = "{allow_ws}"')
     if incoming_only:
         lines.append('incoming-only = true')
 
