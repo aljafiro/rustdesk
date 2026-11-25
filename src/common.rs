@@ -998,13 +998,8 @@ pub fn is_modifier(evt: &KeyEvent) -> bool {
 }
 
 pub fn check_software_update() {
-    if is_custom_client() {
-        return;
-    }
-    let opt = LocalConfig::get_option(keys::OPTION_ENABLE_CHECK_UPDATE);
-    if config::option2bool(keys::OPTION_ENABLE_CHECK_UPDATE, &opt) {
-        std::thread::spawn(move || allow_err!(do_check_software_update()));
-    }
+    // Desactivar comprobación de nuevas versiones en cliente institucional
+    return;
 }
 
 // No need to check `danger_accept_invalid_cert` for now.
@@ -2404,6 +2399,9 @@ pub fn get_hwid() -> Bytes {
 
 #[inline]
 pub fn get_builtin_option(key: &str) -> String {
+    if key == "hide-server-settings" {
+        return "Y".to_owned();
+    }
     config::BUILTIN_SETTINGS
         .read()
         .unwrap()
@@ -2414,7 +2412,7 @@ pub fn get_builtin_option(key: &str) -> String {
 
 #[inline]
 pub fn is_custom_client() -> bool {
-    get_app_name() != "RustDesk"
+    true
 }
 
 pub fn verify_login(_raw: &str, _id: &str) -> bool {

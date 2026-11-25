@@ -182,7 +182,7 @@ sign_file() {
 echo ""
 echo "[PASO 1] Inyectando configuración del entorno [$ENV]..."
 CLI_FLAG=""
-if [[ "$RELEASE_DIR" =~ "CLI" ]] || [ -d "$RELEASE_DIR/data" ]; then
+if [[ "$RELEASE_DIR" =~ "CLI" ]]; then
     CLI_FLAG="--incoming-only"
 fi
 
