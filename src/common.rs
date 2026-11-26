@@ -2211,6 +2211,35 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
     ThrottledInterval::new(i)
 }
 
+fn load_portable_config_toml(dir: &std::path::Path) {
+    let toml_path = dir.join("config.toml");
+    let Ok(content) = std::fs::read_to_string(&toml_path) else {
+        return;
+    };
+    log::info!("Loading portable configuration from {:?}", toml_path);
+    let mut server_settings = config::OVERWRITE_SETTINGS.write().unwrap();
+    let mut is_pre = false;
+    for line in content.lines() {
+        let line = line.trim();
+        if line.starts_with('#') || line.starts_with('[') || !line.contains('=') {
+            continue;
+        }
+        let parts: Vec<&str> = line.splitn(2, '=').collect();
+        if parts.len() == 2 {
+            let k = parts[0].trim().replace('_', "-");
+            let v = parts[1].trim().trim_matches('"').trim_matches('\'').to_string();
+            if k == "rendezvous-server" && v.contains("-pre") {
+                is_pre = true;
+            }
+            server_settings.insert(k.clone(), v.clone());
+            server_settings.insert(parts[0].trim().to_string(), v);
+        }
+    }
+    if is_pre {
+        *config::APP_NAME.write().unwrap() = "RustDesk-PRE".to_owned();
+    }
+}
+
 pub fn load_custom_client() {
     #[cfg(debug_assertions)]
     if let Ok(data) = std::fs::read_to_string("./custom.txt") {
@@ -2223,9 +2252,10 @@ pub fn load_custom_client() {
     };
     #[cfg(target_os = "macos")]
     let path = path.join("../Resources");
-    let path = path.join("custom.txt");
-    if path.is_file() {
-        let Ok(data) = std::fs::read_to_string(&path) else {
+    load_portable_config_toml(&path);
+    let custom_file = path.join("custom.txt");
+    if custom_file.is_file() {
+        let Ok(data) = std::fs::read_to_string(&custom_file) else {
             log::error!("Failed to read custom client config");
             return;
         };
