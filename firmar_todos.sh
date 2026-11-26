@@ -60,22 +60,45 @@ TARGETS=(
     "Release/SoporteDiputacion-SOPO-PRO:PRO:soporte-diputacion-CAU.exe:rustdesk-true-portable-windows-SOPO-PRO.zip"
 )
 
-echo "[*] Preparando carpetas de release desde artefactos ZIP..."
+# Filtrar sólo los que tienen ZIP o carpeta con rustdesk.exe
+AVAILABLE_TARGETS=()
 for entry in "${TARGETS[@]}"; do
+    IFS=":" read -r dir env final_exe zip_file <<< "$entry"
+    if [ -f "$zip_file" ]; then
+        AVAILABLE_TARGETS+=("$entry")
+    elif [ -d "$dir" ] && [ -f "$dir/rustdesk.exe" ]; then
+        AVAILABLE_TARGETS+=("$entry")
+    else
+        echo "[i] Omitiendo $final_exe: no existe $zip_file"
+    fi
+done
+
+if [ ${#AVAILABLE_TARGETS[@]} -eq 0 ]; then
+    echo "[!] Error: No hay artefactos ZIP ni carpetas de release para procesar."
+    exit 1
+fi
+
+echo ""
+echo "Artefactos a procesar (${#AVAILABLE_TARGETS[@]}):"
+for entry in "${AVAILABLE_TARGETS[@]}"; do
+    IFS=":" read -r dir env final_exe zip_file <<< "$entry"
+    echo "  - $final_exe ($env)"
+done
+echo ""
+
+echo "[*] Preparando carpetas de release desde artefactos ZIP..."
+for entry in "${AVAILABLE_TARGETS[@]}"; do
     IFS=":" read -r dir env final_exe zip_file <<< "$entry"
     if [ -f "$zip_file" ]; then
         echo "  -> Descomprimiendo $zip_file en $dir..."
         rm -rf "$dir"
         mkdir -p "$dir"
         unzip -q -o "$zip_file" -d "$dir"
-    elif [ ! -d "$dir" ]; then
-        echo "[!] Error: No se encontró ni el directorio '$dir' ni el archivo '$zip_file'."
-        exit 1
     fi
 done
 echo ""
 
-for entry in "${TARGETS[@]}"; do
+for entry in "${AVAILABLE_TARGETS[@]}"; do
     IFS=":" read -r dir env final_exe zip_file <<< "$entry"
     echo "=========================================================="
     echo "[*] Procesando: $final_exe ($env)"
