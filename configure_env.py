@@ -69,6 +69,12 @@ def apply_to_source(cfg: dict):
                 f'pub const RS_PUB_KEY: &str = "{key}";',
                 new_content,
             )
+            # Reemplazar URL por defecto de api-server en Config::get_option
+            new_content = re.sub(
+                r'"https://soporteremoto-diputacion-cau[^"]*"',
+                f'"{api_server}"',
+                new_content,
+            )
 
             if new_content != content:
                 with open(real_p, "w", encoding="utf-8") as f:
@@ -77,6 +83,27 @@ def apply_to_source(cfg: dict):
             else:
                 print(f"[-] Sin cambios necesarios en: {p}")
             hbb_updated = True
+
+    # 1b. libs/hbb_common/src/websocket.rs
+    ws_candidates = [
+        os.path.join(SCRIPT_DIR, "libs", "hbb_common", "src", "websocket.rs"),
+        os.path.join(SCRIPT_DIR, "..", "hbb_common", "src", "websocket.rs"),
+    ]
+    cau_host = api_server.replace("https://", "").replace("http://", "").split(":")[0]
+    for p in ws_candidates:
+        if os.path.exists(p):
+            real_p = os.path.realpath(p)
+            with open(real_p, "r", encoding="utf-8") as f:
+                ws_content = f.read()
+            new_ws = re.sub(
+                r'host = "soporteremoto-diputacion-cau[^"]*"\.to_string\(\);',
+                f'host = "{cau_host}".to_string();',
+                ws_content,
+            )
+            if new_ws != ws_content:
+                with open(real_p, "w", encoding="utf-8") as f:
+                    f.write(new_ws)
+                print(f"[+] Actualizado correctamente: {p}")
 
     if not hbb_updated:
         print("[!] Advertencia: No se encontró libs/hbb_common/src/config.rs")
