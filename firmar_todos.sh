@@ -27,9 +27,24 @@ echo "  3) Soporte CAU PRE:   soporte-diputacion-CAU-pre.exe"
 echo "  4) Soporte CAU PRO:   soporte-diputacion-CAU.exe"
 echo ""
 
-read -rsp "Introduce la contraseña del certificado Camerfirma (.p12): " CERT_PASS
-echo ""
-echo ""
+# Parsear argumentos si se pasa contraseña (-p)
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -p|--pass)
+            CERT_PASS="$2"
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+if [ -z "$CERT_PASS" ]; then
+    read -rsp "Introduce la contraseña del certificado Camerfirma (.p12): " CERT_PASS
+    echo ""
+    echo ""
+fi
 
 if [ -z "$CERT_PASS" ]; then
     echo "[!] Error: La contraseña no puede estar vacía."
@@ -39,14 +54,29 @@ fi
 export CERT_PASS
 
 TARGETS=(
-    "Release/SoporteDiputacion-CLI-PRE:PRE:soporte-diputacion-pre.exe"
-    "Release/SoporteDiputacion-CLI-PRO:PRO:soporte-diputacion.exe"
-    "Release/SoporteDiputacion-SOPO-PRE:PRE:soporte-diputacion-CAU-pre.exe"
-    "Release/SoporteDiputacion-SOPO-PRO:PRO:soporte-diputacion-CAU.exe"
+    "Release/SoporteDiputacion-CLI-PRE:PRE:soporte-diputacion-pre.exe:rustdesk-true-portable-windows-CLI-PRE.zip"
+    "Release/SoporteDiputacion-CLI-PRO:PRO:soporte-diputacion.exe:rustdesk-true-portable-windows-CLI-PRO.zip"
+    "Release/SoporteDiputacion-SOPO-PRE:PRE:soporte-diputacion-CAU-pre.exe:rustdesk-true-portable-windows-SOPO-PRE.zip"
+    "Release/SoporteDiputacion-SOPO-PRO:PRO:soporte-diputacion-CAU.exe:rustdesk-true-portable-windows-SOPO-PRO.zip"
 )
 
+echo "[*] Preparando carpetas de release desde artefactos ZIP..."
 for entry in "${TARGETS[@]}"; do
-    IFS=":" read -r dir env final_exe <<< "$entry"
+    IFS=":" read -r dir env final_exe zip_file <<< "$entry"
+    if [ -f "$zip_file" ]; then
+        echo "  -> Descomprimiendo $zip_file en $dir..."
+        rm -rf "$dir"
+        mkdir -p "$dir"
+        unzip -q -o "$zip_file" -d "$dir"
+    elif [ ! -d "$dir" ]; then
+        echo "[!] Error: No se encontró ni el directorio '$dir' ni el archivo '$zip_file'."
+        exit 1
+    fi
+done
+echo ""
+
+for entry in "${TARGETS[@]}"; do
+    IFS=":" read -r dir env final_exe zip_file <<< "$entry"
     echo "=========================================================="
     echo "[*] Procesando: $final_exe ($env)"
     echo "    Directorio: $dir"

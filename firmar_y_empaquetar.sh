@@ -162,18 +162,24 @@ sign_file() {
         pass_param=(-pass "$CERT_PASS")
     fi
 
-    osslsigncode sign \
+    rm -f "$tmp_out"
+    local sign_err
+    if ! sign_err=$(osslsigncode sign \
         -pkcs12 "$CERT_FILE" \
         "${pass_param[@]}" \
         -h sha256 \
         -ts "$TIMESTAMP_URL" \
         -in "$target" \
-        -out "$tmp_out" >/dev/null 2>&1
+        -out "$tmp_out" 2>&1); then
+        echo "[!] Fallo al firmar $target con osslsigncode:"
+        echo "$sign_err"
+        exit 1
+    fi
 
     if [ -f "$tmp_out" ]; then
         mv "$tmp_out" "$target"
     else
-        echo "[!] Fallo al firmar $target con osslsigncode."
+        echo "[!] Fallo al firmar $target con osslsigncode (no se generó $tmp_out)."
         exit 1
     fi
 }
