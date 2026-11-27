@@ -461,10 +461,8 @@ impl Client {
         };
         DIPU
         */
-        // Fuerza de manera permanente tu servidor de retransmisión
-        let rendezvous_server = check_port("soporteremoto-diputacion-pre.dacoruna.gal", RENDEZVOUS_PORT);
-        let servers = Vec::new();
-        let contained = true;
+        // Fuerza de manera permanente tu servidor de retransmisión según la configuración activa
+        let (rendezvous_server, servers, contained) = crate::get_rendezvous_server(1_000).await;
 
         // Same relay gate as the v6 socket below: under any forced relay the v6 punch cannot
         // be used, so probing v6 reachability is wasted work on every such connection.
