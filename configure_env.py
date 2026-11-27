@@ -75,6 +75,13 @@ def apply_to_source(cfg: dict):
                 f'"{api_server}"',
                 new_content,
             )
+            # Reemplazar APP_NAME por defecto
+            app_name = f"RustDesk-{env_name.upper()}"
+            new_content = re.sub(
+                r'pub static ref APP_NAME:\s*RwLock<String>\s*=\s*RwLock::new\(.*?\);',
+                f'pub static ref APP_NAME: RwLock<String> = RwLock::new("{app_name}".to_owned());',
+                new_content,
+            )
 
             if new_content != content:
                 with open(real_p, "w", encoding="utf-8") as f:
@@ -95,11 +102,18 @@ def apply_to_source(cfg: dict):
             real_p = os.path.realpath(p)
             with open(real_p, "r", encoding="utf-8") as f:
                 ws_content = f.read()
-            new_ws = re.sub(
-                r'host = "soporteremoto-diputacion-cau[^"]*"\.to_string\(\);',
-                f'host = "{cau_host}".to_string();',
-                ws_content,
-            )
+            if "pre" in server.lower():
+                new_ws = re.sub(
+                    r'(if host == "soporteremoto-diputacion-pre\.dacoruna\.gal" \{\s*host = ")[^"]*("\.to_string\(\);)',
+                    rf'\g<1>{cau_host}\g<2>',
+                    ws_content,
+                )
+            else:
+                new_ws = re.sub(
+                    r'(else if host == "soporteremoto-diputacion\.dacoruna\.gal" \{\s*host = ")[^"]*("\.to_string\(\);)',
+                    rf'\g<1>{cau_host}\g<2>',
+                    ws_content,
+                )
             if new_ws != ws_content:
                 with open(real_p, "w", encoding="utf-8") as f:
                     f.write(new_ws)

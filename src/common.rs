@@ -2237,6 +2237,8 @@ fn load_portable_config_toml(dir: &std::path::Path) {
     }
     if is_pre {
         *config::APP_NAME.write().unwrap() = "RustDesk-PRE".to_owned();
+    } else {
+        *config::APP_NAME.write().unwrap() = "RustDesk-PRO".to_owned();
     }
 }
 
